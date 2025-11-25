@@ -17,6 +17,10 @@
 # misc
 .DS_Store
 *.pem
+*.db
+*.sqlite
+prisma/*.db
+
 
 # debug
 npm-debug.log*
