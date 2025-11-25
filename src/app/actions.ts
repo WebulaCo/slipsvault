@@ -292,9 +292,9 @@ export async function exportSlips() {
     const header = ['Date', 'Title', 'Place', 'Amount', 'Currency', 'Tags', 'Summary'].join(',')
 
     // CSV Rows
-    const rows = slips.map(slip => {
+    const rows = slips.map((slip: any) => {
         const date = slip.date ? slip.date.toISOString().split('T')[0] : ''
-        const tags = slip.tags.map(t => t.name).join(';')
+        const tags = slip.tags.map((t: any) => t.name).join(';')
 
         // Escape fields that might contain commas
         const escape = (field: string | null | undefined) => {
