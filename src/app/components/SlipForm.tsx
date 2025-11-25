@@ -64,7 +64,7 @@ export default function SlipForm({ initialData, action }: SlipFormProps) {
             const result = await analyzeSlip(formData)
             setPhotoUrl(result.url)
 
-            if (result.data) {
+            if (result.data && Object.keys(result.data).length > 0) {
                 if (result.data.place) {
                     setPlace(result.data.place)
                     if (!title) setTitle(result.data.place)
@@ -77,6 +77,11 @@ export default function SlipForm({ initialData, action }: SlipFormProps) {
                 if (result.data.tags && result.data.tags.length > 0) {
                     setTags(result.data.tags.join(', '))
                 }
+            } else {
+                console.warn("Analysis returned empty data");
+                // Don't alert here to avoid annoying user if they just want to upload, 
+                // but maybe show a toast or small message? 
+                // For now, let's just log it. The user will see fields empty.
             }
         } catch (_e) { // Changed error to _e as it's not used
             console.error("Analysis failed", _e) // Log the error
@@ -249,7 +254,7 @@ export default function SlipForm({ initialData, action }: SlipFormProps) {
                                     {photoUrl ? (
                                         <div className="relative flex items-center justify-center bg-base-200 rounded-lg overflow-hidden p-2 w-full">
                                             <img
-                                                src={`/uploads/${photoUrl.split('/').pop()}`}
+                                                src={photoUrl.startsWith('http') ? photoUrl : `/uploads/${photoUrl.split('/').pop()}`}
                                                 alt="Preview"
                                                 className="w-full max-h-[400px] object-contain shadow-sm rounded-md"
                                             />
