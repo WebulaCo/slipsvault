@@ -17,8 +17,8 @@ export default function RegisterPage() {
 
         try {
             await registerUser(formData)
-        } catch (err) {
-            setError('Registration failed. Email might be taken.')
+        } catch (err: any) {
+            setError(err.message || 'Registration failed. Please try again.')
             setLoading(false)
         }
     }
