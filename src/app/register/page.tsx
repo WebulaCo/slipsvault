@@ -3,10 +3,13 @@
 import { useState } from 'react'
 import { registerUser } from '@/app/actions'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 export default function RegisterPage() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
+
+    const router = useRouter()
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -16,9 +19,15 @@ export default function RegisterPage() {
         const formData = new FormData(e.currentTarget)
 
         try {
-            await registerUser(formData)
+            const result = await registerUser(formData)
+            if (result.success) {
+                router.push('/login')
+            } else {
+                setError(result.error || 'Registration failed. Please try again.')
+            }
         } catch (err: any) {
-            setError(err.message || 'Registration failed. Please try again.')
+            setError('An unexpected error occurred.')
+        } finally {
             setLoading(false)
         }
     }

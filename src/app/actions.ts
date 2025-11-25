@@ -119,29 +119,34 @@ export async function registerUser(formData: FormData) {
     const password = formData.get('password') as string
 
     if (!email || !password) {
-        throw new Error("Email and password are required")
+        return { success: false, error: "Email and password are required" }
     }
 
-    const existingUser = await prisma.user.findUnique({
-        where: { email }
-    })
+    try {
+        const existingUser = await prisma.user.findUnique({
+            where: { email }
+        })
 
-    if (existingUser) {
-        throw new Error("User already exists")
-    }
-
-    const hashedPassword = await hash(password, 12)
-
-    await prisma.user.create({
-        data: {
-            name,
-            email,
-            password: hashedPassword,
-            role: 'USER'
+        if (existingUser) {
+            return { success: false, error: "User already exists" }
         }
-    })
 
-    redirect('/login')
+        const hashedPassword = await hash(password, 12)
+
+        await prisma.user.create({
+            data: {
+                name,
+                email,
+                password: hashedPassword,
+                role: 'USER'
+            }
+        })
+
+        return { success: true }
+    } catch (error) {
+        console.error("Registration error:", error)
+        return { success: false, error: "Something went wrong during registration" }
+    }
 }
 
 export async function updateSlip(formData: FormData) {
