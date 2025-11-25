@@ -61,6 +61,7 @@ class VercelBlobStorageService implements StorageService {
     async saveFile(file: File): Promise<string> {
         const blob = await put(file.name, file, {
             access: 'public',
+            addRandomSuffix: true, // Fix: Allow duplicate filenames by adding a suffix
         });
         return blob.url;
     }
