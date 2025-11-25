@@ -34,12 +34,8 @@ export async function extractTextFromImage(buffer: Buffer): Promise<string> {
         // const fs = require('fs');
         // if (!fs.existsSync(cachePath)) fs.mkdirSync(cachePath, { recursive: true });
 
-        // Explicitly set worker path to avoid resolution issues in Next.js
-        const workerPath = path.join(process.cwd(), 'node_modules', 'tesseract.js', 'src', 'worker-script', 'node', 'index.js');
-
         worker = await createWorker('eng', 1, {
             cachePath,
-            workerPath,
             logger: m => {
                 // Only log progress in development to avoid cluttering production logs
                 if (process.env.NODE_ENV === 'development') {
