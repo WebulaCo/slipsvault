@@ -12,27 +12,43 @@ import { hash } from "bcryptjs"
 import { extractTextFromImage, parseSlipDetails } from "@/lib/ocr"
 
 export async function analyzeSlip(formData: FormData) {
+    console.log("analyzeSlip: Started");
     const session = await getServerSession(authOptions)
-    if (!session) throw new Error("Unauthorized")
+    if (!session) {
+        console.error("analyzeSlip: Unauthorized");
+        throw new Error("Unauthorized")
+    }
 
     const file = formData.get('photo') as File | null
-    if (!file || file.size === 0) throw new Error("No file provided")
+    if (!file || file.size === 0) {
+        console.error("analyzeSlip: No file provided");
+        throw new Error("No file provided")
+    }
+    console.log(`analyzeSlip: File received. Name: ${file.name}, Size: ${file.size}, Type: ${file.type}`);
 
-    const storage = getStorageService()
-    const url = await storage.saveFile(file)
+    try {
+        const storage = getStorageService()
+        console.log("analyzeSlip: Storage service obtained. Saving file...");
+        const url = await storage.saveFile(file)
+        console.log(`analyzeSlip: File saved at ${url}`);
 
-    // Convert file to buffer for OCR
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
+        // Convert file to buffer for OCR
+        const arrayBuffer = await file.arrayBuffer()
+        const buffer = Buffer.from(arrayBuffer)
 
-    console.log("Starting OCR analysis...");
-    const text = await extractTextFromImage(buffer)
-    console.log("OCR Text:", text.substring(0, 100) + "...");
+        console.log("analyzeSlip: Starting OCR analysis...");
+        const text = await extractTextFromImage(buffer)
+        console.log("analyzeSlip: OCR Text length:", text.length);
+        console.log("analyzeSlip: OCR Text preview:", text.substring(0, 100) + "...");
 
-    const data = parseSlipDetails(text)
-    console.log("Parsed Data:", data);
+        const data = parseSlipDetails(text)
+        console.log("analyzeSlip: Parsed Data:", data);
 
-    return { url, data }
+        return { url, data }
+    } catch (error) {
+        console.error("analyzeSlip: Error occurred:", error);
+        throw error;
+    }
 }
 
 export async function createSlip(formData: FormData) {

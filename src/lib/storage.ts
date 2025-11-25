@@ -78,8 +78,10 @@ class VercelBlobStorageService implements StorageService {
 export function getStorageService(): StorageService {
     // Use Vercel Blob if the token is present (Production)
     if (process.env.BLOB_READ_WRITE_TOKEN) {
+        console.log("getStorageService: Using VercelBlobStorageService");
         return new VercelBlobStorageService();
     }
     // Fallback to Local Storage (Development)
+    console.log("getStorageService: Using LocalStorageService");
     return new LocalStorageService();
 }
