@@ -145,7 +145,10 @@ export async function registerUser(formData: FormData) {
         return { success: true }
     } catch (error) {
         console.error("Registration error:", error)
-        return { success: false, error: "Something went wrong during registration" }
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : "Something went wrong during registration"
+        }
     }
 }
 
