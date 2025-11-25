@@ -9,7 +9,7 @@ import { redirect } from "next/navigation"
 import { hash } from "bcryptjs"
 
 
-import { extractTextFromImage, parseSlipDetails } from "@/lib/ocr"
+import { analyzeImageWithGemini } from "@/lib/ocr"
 
 export async function analyzeSlip(formData: FormData) {
     console.log("analyzeSlip: Started");
@@ -36,13 +36,9 @@ export async function analyzeSlip(formData: FormData) {
         const arrayBuffer = await file.arrayBuffer()
         const buffer = Buffer.from(arrayBuffer)
 
-        console.log("analyzeSlip: Starting OCR analysis...");
-        const text = await extractTextFromImage(buffer)
-        console.log("analyzeSlip: OCR Text length:", text.length);
-        console.log("analyzeSlip: OCR Text preview:", text.substring(0, 100) + "...");
-
-        const data = parseSlipDetails(text)
-        console.log("analyzeSlip: Parsed Data:", data);
+        console.log("analyzeSlip: Starting Gemini analysis...");
+        const data = await analyzeImageWithGemini(buffer);
+        console.log("analyzeSlip: Analyzed Data:", data);
 
         return { url, data }
     } catch (error) {

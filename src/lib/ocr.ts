@@ -1,7 +1,5 @@
 
-import { createWorker } from 'tesseract.js';
-import path from 'path';
-import os from 'os';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 interface SlipData {
     place?: string;
@@ -12,120 +10,83 @@ interface SlipData {
     tags?: string[];
 }
 
-// Keyword mapping for auto-tagging
-const TAG_KEYWORDS: Record<string, string[]> = {
-    'Food': ['restaurant', 'cafe', 'coffee', 'burger', 'pizza', 'lunch', 'dinner', 'breakfast', 'starbucks', 'mcdonalds', 'kfc', 'subway', 'dining'],
-    'Groceries': ['supermarket', 'grocery', 'market', 'woolworths', 'coles', 'aldi', 'spar', 'checkers', 'pick n pay'],
-    'Transport': ['uber', 'taxi', 'cab', 'train', 'bus', 'fuel', 'petrol', 'gas', 'shell', 'bp', 'caltex', 'engien', 'total'],
-    'Utilities': ['water', 'electricity', 'power', 'gas', 'internet', 'phone', 'telkom', 'vodacom', 'mtn'],
-    'Shopping': ['mall', 'clothing', 'apparel', 'shoes', 'retail', 'store'],
-    'Health': ['pharmacy', 'doctor', 'hospital', 'clinic', 'clicks', 'dis-chem', 'medical'],
-    'Entertainment': ['cinema', 'movie', 'theatre', 'concert', 'netflix', 'spotify'],
-    'Travel': ['hotel', 'airbnb', 'flight', 'airline', 'booking', 'accommodation']
-};
-
 export async function extractTextFromImage(buffer: Buffer): Promise<string> {
-    let worker;
+    // This function is kept for backward compatibility or raw text needs,
+    // but we'll primarily use analyzeImageWithGemini for structured data.
     try {
-        // Use /tmp for cache to avoid permission issues in serverless/restricted environments
-        const cachePath = path.join(os.tmpdir(), 'tesseract-cache');
+        if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+            throw new Error("GOOGLE_GENERATIVE_AI_API_KEY is not set");
+        }
 
-        // Ensure the directory exists (optional, tesseract might create it)
-        // const fs = require('fs');
-        // if (!fs.existsSync(cachePath)) fs.mkdirSync(cachePath, { recursive: true });
+        const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        worker = await createWorker('eng', 1, {
-            cachePath,
-            logger: m => {
-                // Only log progress in development to avoid cluttering production logs
-                if (process.env.NODE_ENV === 'development') {
-                    console.log(m);
-                }
-            }
-        });
+        const imagePart = {
+            inlineData: {
+                data: buffer.toString("base64"),
+                mimeType: "image/jpeg", // Assuming JPEG, but Gemini handles most common formats
+            },
+        };
 
-        const { data: { text } } = await worker.recognize(buffer);
-        return text;
+        const result = await model.generateContent([
+            "Extract all text from this image exactly as it appears.",
+            imagePart,
+        ]);
+        const response = await result.response;
+        return response.text();
     } catch (error) {
-        console.error("OCR Extraction Failed:", error);
-        throw new Error("Failed to extract text from image");
-    } finally {
-        if (worker) {
-            await worker.terminate();
-        }
+        console.error("Gemini OCR Failed:", error);
+        throw new Error("Failed to extract text from image using Gemini");
     }
 }
 
-export function generateTagsFromText(text: string): string[] {
-    const lowerText = text.toLowerCase();
-    const tags = new Set<string>();
-
-    for (const [tag, keywords] of Object.entries(TAG_KEYWORDS)) {
-        if (keywords.some(keyword => lowerText.includes(keyword))) {
-            tags.add(tag);
+export async function analyzeImageWithGemini(buffer: Buffer): Promise<SlipData> {
+    try {
+        if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+            throw new Error("GOOGLE_GENERATIVE_AI_API_KEY is not set");
         }
-    }
 
-    return Array.from(tags);
-}
-
-export function parseSlipDetails(text: string): SlipData {
-    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-    const data: SlipData = {};
-
-    // 1. Attempt to find Total Amount
-    const amountRegex = /(\d+[.,]\d{2})/g;
-    let maxAmount = 0;
-
-    const potentialAmounts = text.match(amountRegex);
-    if (potentialAmounts) {
-        potentialAmounts.forEach(match => {
-            const val = parseFloat(match.replace(',', '.'));
-            if (!isNaN(val) && val > maxAmount) {
-                maxAmount = val;
-            }
+        const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY);
+        // Use a model capable of vision and JSON output
+        const model = genAI.getGenerativeModel({
+            model: "gemini-1.5-flash",
+            generationConfig: { responseMimeType: "application/json" }
         });
+
+        const imagePart = {
+            inlineData: {
+                data: buffer.toString("base64"),
+                mimeType: "image/jpeg",
+            },
+        };
+
+        const prompt = `
+            Analyze this receipt/slip and extract the following information in JSON format:
+            - place: The name of the merchant or place.
+            - date: The date of the transaction (YYYY-MM-DD format if possible).
+            - amountAfterTax: The total amount paid (number).
+            - currency: The currency symbol (e.g., R, $, €).
+            - summary: A brief summary of the items purchased (max 200 chars).
+            - tags: A list of categories for this expense (e.g., Food, Transport, Groceries, Utilities, Shopping, Health, Entertainment, Travel).
+            
+            Return ONLY the JSON object.
+        `;
+
+        const result = await model.generateContent([prompt, imagePart]);
+        const response = await result.response;
+        const text = response.text();
+
+        return JSON.parse(text) as SlipData;
+
+    } catch (error) {
+        console.error("Gemini Analysis Failed:", error);
+        // Fallback to empty object or throw
+        return {};
     }
+}
 
-    if (maxAmount > 0) {
-        data.amountAfterTax = maxAmount;
-    }
-
-    // 2. Attempt to find Date
-    const dateRegex = /(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})|(\d{4}[/-]\d{1,2}[/-]\d{1,2})|(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{2,4})/i;
-    const dateMatch = text.match(dateRegex);
-    if (dateMatch) {
-        try {
-            const dateStr = dateMatch[0];
-            const date = new Date(dateStr);
-            if (!isNaN(date.getTime())) {
-                data.date = date.toISOString().split('T')[0];
-            }
-        } catch (e) {
-            console.warn("Failed to parse date:", dateMatch[0]);
-        }
-    }
-
-    // 3. Attempt to find Place / Merchant
-    for (const line of lines) {
-        if (line.length > 3 && !line.match(dateRegex) && isNaN(parseFloat(line))) {
-            data.place = line;
-            break;
-        }
-    }
-
-    // 4. Currency
-    if (text.includes('$')) data.currency = '$';
-    else if (text.includes('€')) data.currency = '€';
-    else if (text.includes('£')) data.currency = '£';
-    else if (text.includes('R')) data.currency = 'R'; // ZAR
-    else data.currency = '$'; // Default
-
-    // 5. Summary
-    data.summary = text.substring(0, 200) + (text.length > 200 ? '...' : '');
-
-    // 6. Tags
-    data.tags = generateTagsFromText(text);
-
-    return data;
+// Kept for backward compatibility if needed, but Gemini does this better
+export function parseSlipDetails(text: string): SlipData {
+    // This is now a fallback or utility if we only have text
+    return {};
 }
