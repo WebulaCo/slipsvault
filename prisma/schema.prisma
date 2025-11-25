@@ -1,0 +1,66 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url = env("POSTGRES_PRISMA_URL") // uses connection pooling
+  directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  slips     Slip[]
+}
+
+model Slip {
+  id              String   @id @default(cuid())
+  title           String
+  content         String?
+  place           String?
+  date            DateTime?
+  amountBeforeTax Float?
+  taxAmount       Float?
+  amountAfterTax  Float?
+  currency        String?
+  summary         String?
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photos          Photo[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  tags            Tag[]
+}
+
+model Photo {
+  id        String   @id @default(cuid())
+  url       String
+  slipId    String
+  slip      Slip     @relation(fields: [slipId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String
+  slips     Slip[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, userId])
+}
