@@ -108,7 +108,7 @@ export default function SlipList({ slips }: SlipListProps) {
                     <div className="modal-box max-w-5xl p-0 bg-transparent shadow-none overflow-hidden flex items-center justify-center relative">
                         <button className="btn btn-circle btn-sm absolute right-2 top-2 z-50 bg-base-100 border-none" onClick={() => setLightboxOpen(false)}>✕</button>
                         <img
-                            src={`/uploads/${selectedImage.split('/').pop()}`}
+                            src={selectedImage.startsWith('http') ? selectedImage : `/uploads/${selectedImage.split('/').pop()}`}
                             alt="Full size"
                             className="max-h-[90vh] max-w-full object-contain rounded-lg shadow-2xl bg-base-100"
                             onClick={(e) => e.stopPropagation()}
