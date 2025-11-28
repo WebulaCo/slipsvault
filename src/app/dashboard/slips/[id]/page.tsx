@@ -38,9 +38,22 @@ export default async function SlipDetailsPage({ params }: SlipDetailsPageProps) 
                     <ChevronLeft size={24} />
                 </Link>
                 <h1 className="text-xl font-bold text-brand-navy">Slip Details</h1>
-                <button className="text-gray-900 hover:text-brand-teal">
-                    <MoreVertical size={24} />
-                </button>
+                <div className="dropdown dropdown-end">
+                    <div tabIndex={0} role="button" className="btn btn-ghost btn-circle">
+                        <MoreVertical size={24} className="text-gray-900" />
+                    </div>
+                    <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow-lg bg-white rounded-box w-52 border border-gray-100">
+                        <li>
+                            <Link href={`/dashboard/edit/${id}`} className="flex items-center gap-2 text-gray-700 hover:bg-gray-50">
+                                <Edit2 size={16} />
+                                Edit Slip
+                            </Link>
+                        </li>
+                        <li>
+                            <DeleteSlipButton id={id} asMenuItem />
+                        </li>
+                    </ul>
+                </div>
             </header>
 
             {/* Image Preview */}
