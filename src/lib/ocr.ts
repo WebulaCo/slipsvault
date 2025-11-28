@@ -55,8 +55,6 @@ export async function analyzeImageWithGemini(buffer: Buffer, mimeType: string = 
 
         const validMimeType = mimeType || "image/jpeg";
 
-        console.log(`analyzeImageWithGemini: Processing image. Size: ${buffer.length}, MimeType: ${validMimeType}`);
-
         const imagePart = {
             inlineData: {
                 data: buffer.toString("base64"),
@@ -79,8 +77,6 @@ export async function analyzeImageWithGemini(buffer: Buffer, mimeType: string = 
         const result = await model.generateContent([prompt, imagePart]);
         const response = await result.response;
         const text = response.text();
-
-        console.log("analyzeImageWithGemini: Raw Gemini Response:", text);
 
         // Clean the text to ensure it's valid JSON (sometimes models add markdown code blocks)
         const cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim();

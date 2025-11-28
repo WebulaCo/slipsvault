@@ -86,9 +86,7 @@ export default function SlipForm({ initialData, action }: SlipFormProps) {
                 }
             } else {
                 console.warn("Analysis returned empty data", result.data);
-                const msg = `Analysis completed but no usable data found. Raw response: ${JSON.stringify(result.data)}`;
-                setError(msg);
-                alert(msg); // Force visibility
+                setError("Analysis completed but no text could be extracted. Please enter details manually.");
             }
         } catch (err: any) {
             console.error("Analysis failed", err)
