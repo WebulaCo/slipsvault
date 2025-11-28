@@ -62,22 +62,27 @@ export default function SlipForm({ initialData, action }: SlipFormProps) {
 
         try {
             const result = await analyzeSlip(formData)
-            setPhotoUrl(result.url)
+
+            if (!result.success) {
+                throw new Error(result.error || "Analysis failed");
+            }
+
+            setPhotoUrl(result.url!) // url is present on success
 
             const hasData = result.data && (result.data.place || result.data.date || result.data.amountAfterTax);
 
             if (hasData) {
-                if (result.data.place) {
-                    setPlace(result.data.place)
-                    if (!title) setTitle(result.data.place)
+                if (result.data!.place) {
+                    setPlace(result.data!.place)
+                    if (!title) setTitle(result.data!.place)
                 }
-                if (result.data.date) setDate(result.data.date)
+                if (result.data!.date) setDate(result.data!.date)
                 // Only set amountAfterTax (now 'amount')
-                if (result.data.amountAfterTax) setAmount(result.data.amountAfterTax.toString())
-                if (result.data.currency) setCurrency(result.data.currency)
+                if (result.data!.amountAfterTax) setAmount(result.data!.amountAfterTax.toString())
+                if (result.data!.currency) setCurrency(result.data!.currency)
                 // if (result.data.summary) setSummary(result.data.summary) // Do not auto-populate summary
-                if (result.data.tags && result.data.tags.length > 0) {
-                    setTags(result.data.tags.join(', '))
+                if (result.data!.tags && result.data!.tags.length > 0) {
+                    setTags(result.data!.tags.join(', '))
                 }
             } else {
                 console.warn("Analysis returned empty data", result.data);

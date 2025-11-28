@@ -13,20 +13,20 @@ import { analyzeImageWithGemini } from "@/lib/ocr"
 
 export async function analyzeSlip(formData: FormData) {
     console.log("analyzeSlip: Started");
-    const session = await getServerSession(authOptions)
-    if (!session) {
-        console.error("analyzeSlip: Unauthorized");
-        throw new Error("Unauthorized")
-    }
-
-    const file = formData.get('photo') as File | null
-    if (!file || file.size === 0) {
-        console.error("analyzeSlip: No file provided");
-        throw new Error("No file provided")
-    }
-    console.log(`analyzeSlip: File received. Name: ${file.name}, Size: ${file.size}, Type: ${file.type}`);
-
     try {
+        const session = await getServerSession(authOptions)
+        if (!session) {
+            console.error("analyzeSlip: Unauthorized");
+            return { success: false, error: "Unauthorized" };
+        }
+
+        const file = formData.get('photo') as File | null
+        if (!file || file.size === 0) {
+            console.error("analyzeSlip: No file provided");
+            return { success: false, error: "No file provided" };
+        }
+        console.log(`analyzeSlip: File received. Name: ${file.name}, Size: ${file.size}, Type: ${file.type}`);
+
         const storage = getStorageService()
         console.log("analyzeSlip: Storage service obtained. Saving file...");
         const url = await storage.saveFile(file)
@@ -40,10 +40,10 @@ export async function analyzeSlip(formData: FormData) {
         const data = await analyzeImageWithGemini(buffer, file.type);
         console.log("analyzeSlip: Analyzed Data:", data);
 
-        return { url, data }
-    } catch (error) {
+        return { success: true, url, data }
+    } catch (error: any) {
         console.error("analyzeSlip: Error occurred:", error);
-        throw error;
+        return { success: false, error: error.message || "An unexpected error occurred" };
     }
 }
 
