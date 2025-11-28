@@ -6,6 +6,7 @@ import SearchInput from "@/app/components/SearchInput"
 import ExportButton from "@/app/components/ExportButton"
 import { Filter, Calendar, ArrowUpDown, ChevronLeft, Plus, Search, SlidersHorizontal, ChevronRight, Receipt } from "lucide-react"
 import Link from "next/link"
+import AllSlipsList from "./AllSlipsList"
 
 interface AllSlipsPageProps {
     searchParams: Promise<{
@@ -119,66 +120,7 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
             </div>
 
             {/* Slips List Grouped by Month */}
-            <div className="space-y-6">
-                {Object.entries(slipsByMonth).map(([month, monthSlips]) => (
-                    <div key={month}>
-                        <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 pl-1">{month}</h2>
-                        <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
-                            {monthSlips.map((slip, index) => (
-                                <Link
-                                    key={slip.id}
-                                    href={`/dashboard/slips/${slip.id}`}
-                                    className={`block p-4 hover:bg-gray-50 transition-colors ${index !== monthSlips.length - 1 ? 'border-b border-gray-100' : ''}`}
-                                >
-                                    <div className="flex items-center gap-4">
-                                        {/* Thumbnail */}
-                                        <div className="flex-shrink-0">
-                                            {slip.photos.length > 0 ? (
-                                                <div className="w-12 h-12 rounded-lg bg-gray-50 overflow-hidden border border-gray-100">
-                                                    <img
-                                                        src={slip.photos[0].url.startsWith('http') ? slip.photos[0].url : `/uploads/${slip.photos[0].url.split('/').pop()}`}
-                                                        alt={slip.title}
-                                                        className="w-full h-full object-cover"
-                                                    />
-                                                </div>
-                                            ) : (
-                                                <div className="w-12 h-12 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400">
-                                                    <Receipt size={20} />
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Middle: Title & Date */}
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="font-semibold text-brand-navy truncate text-base">{slip.title}</h3>
-                                            <div className="text-sm text-gray-500 mt-0.5">
-                                                {slip.date ? new Date(slip.date).toLocaleDateString() : '-'}
-                                            </div>
-                                        </div>
-
-                                        {/* Right: Amount & Tag & Chevron */}
-                                        <div className="text-right flex-shrink-0 flex items-center gap-3">
-                                            <div>
-                                                <div className="font-bold text-brand-navy text-base">
-                                                    ${slip.amountAfterTax?.toFixed(2)}
-                                                </div>
-                                                {slip.tags && slip.tags.length > 0 && (
-                                                    <div className="mt-1 flex justify-end">
-                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#fff8e1] text-[#f59e0b]">
-                                                            {slip.tags[0].name}
-                                                        </span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <ChevronRight size={20} className="text-gray-300" />
-                                        </div>
-                                    </div>
-                                </Link>
-                            ))}
-                        </div>
-                    </div>
-                ))}
-            </div>
+            <AllSlipsList slipsByMonth={slipsByMonth} />
         </div>
     )
 }
