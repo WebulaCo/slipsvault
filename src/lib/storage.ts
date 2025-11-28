@@ -59,10 +59,12 @@ import { put, del } from '@vercel/blob';
 
 class VercelBlobStorageService implements StorageService {
     async saveFile(file: File): Promise<string> {
+        console.log(`VercelBlobStorageService.saveFile: Uploading ${file.name}`);
         const blob = await put(file.name, file, {
             access: 'public',
             addRandomSuffix: true, // Fix: Allow duplicate filenames by adding a suffix
         });
+        console.log(`VercelBlobStorageService.saveFile: Uploaded to ${blob.url}`);
         return blob.url;
     }
 
@@ -79,10 +81,10 @@ class VercelBlobStorageService implements StorageService {
 export function getStorageService(): StorageService {
     // Use Vercel Blob if the token is present (Production)
     if (process.env.BLOB_READ_WRITE_TOKEN) {
-        console.log("getStorageService: Using VercelBlobStorageService");
+        console.log("getStorageService: Using VercelBlobStorageService (Token present)");
         return new VercelBlobStorageService();
     }
     // Fallback to Local Storage (Development)
-    console.log("getStorageService: Using LocalStorageService");
+    console.log("getStorageService: Using LocalStorageService (Token MISSING)");
     return new LocalStorageService();
 }

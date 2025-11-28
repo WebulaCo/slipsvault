@@ -27,10 +27,10 @@ export async function analyzeSlip(formData: FormData) {
         }
         console.log(`analyzeSlip: File received. Name: ${file.name}, Size: ${file.size}, Type: ${file.type}`);
 
-        const storage = getStorageService()
-        console.log("analyzeSlip: Storage service obtained. Saving file...");
-        const url = await storage.saveFile(file)
-        console.log(`analyzeSlip: File saved at ${url}`);
+        const storage = getStorageService();
+        console.log("analyzeSlip: Calling storage.saveFile");
+        const url = await storage.saveFile(file);
+        console.log(`analyzeSlip: storage.saveFile returned: ${url}`);
 
         // Convert file to buffer for OCR
         const arrayBuffer = await file.arrayBuffer()
