@@ -97,27 +97,32 @@ export async function createSlip(formData: FormData) {
         }
     }))
 
-    await prisma.slip.create({
-        data: {
-            title,
-            content,
-            place,
-            date: dateStr ? new Date(dateStr) : null, // Changed undefined to null
-            amountBeforeTax,
-            taxAmount,
-            amountAfterTax,
-            currency,
-            userId: session.user.id,
-            photos: photoUrl ? {
-                create: {
-                    url: photoUrl
+    try {
+        await prisma.slip.create({
+            data: {
+                title,
+                content,
+                place,
+                date: dateStr ? new Date(dateStr) : null,
+                amountBeforeTax,
+                taxAmount,
+                amountAfterTax,
+                currency,
+                userId: session.user.id,
+                photos: photoUrl ? {
+                    create: {
+                        url: photoUrl
+                    }
+                } : undefined,
+                tags: {
+                    connectOrCreate: tagConnectOrCreate
                 }
-            } : undefined,
-            tags: { // Added tags handling
-                connectOrCreate: tagConnectOrCreate
             }
-        }
-    })
+        })
+    } catch (error) {
+        console.error("Failed to create slip:", error)
+        throw new Error(error instanceof Error ? error.message : "Failed to create slip")
+    }
 
     revalidatePath('/dashboard')
     redirect('/dashboard')
