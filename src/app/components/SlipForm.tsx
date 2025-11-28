@@ -314,6 +314,7 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                         </label>
                         <input
                             type="text"
+                            name="title"
                             placeholder="e.g. Woolworths Groceries"
                             className={inputClass}
                             value={title}
@@ -332,6 +333,7 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
                                 <input
                                     type="number"
+                                    name="amountAfterTax"
                                     step="0.01"
                                     placeholder="0.00"
                                     className={`${inputClass} pl-8`}
@@ -349,6 +351,7 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                             </label>
                             <input
                                 type="date"
+                                name="date"
                                 className={inputClass}
                                 value={date}
                                 onChange={(e) => setDate(e.target.value)}
@@ -366,6 +369,7 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                             <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                             <input
                                 type="text"
+                                name="place"
                                 placeholder="e.g. Cape Town"
                                 className={`${inputClass} pl-10`}
                                 value={place}
