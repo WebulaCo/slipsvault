@@ -3,7 +3,7 @@
 import { Slip, Tag, Photo } from '@prisma/client'
 import Link from 'next/link'
 import { useState } from 'react'
-import { MapPin, Calendar, X } from 'lucide-react'
+import { MapPin, Calendar, X, Receipt } from 'lucide-react'
 
 type SlipWithRelations = Slip & {
     tags: Tag[]
@@ -41,63 +41,48 @@ export default function SlipList({ slips }: SlipListProps) {
     }
 
     return (
-        <div className="bg-base-100 rounded-box shadow">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
             {/* Mobile View (Cards) */}
-            <div className="md:hidden space-y-4 p-4">
-                {slips.map((slip) => (
-                    <div key={slip.id} className="card bg-base-200 shadow-sm">
-                        <div className="card-body p-4">
-                            <div className="flex justify-between items-start mb-2">
-                                <div className="flex items-center gap-3">
-                                    {slip.photos.length > 0 ? (
-                                        <div className="avatar">
-                                            <div className="w-12 h-12 rounded bg-base-300 cursor-pointer" onClick={() => openLightbox(slip.photos[0].url)}>
-                                                <img
-                                                    src={slip.photos[0].url.startsWith('http') ? slip.photos[0].url : `/uploads/${slip.photos[0].url.split('/').pop()}`}
-                                                    alt={slip.title}
-                                                />
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="w-12 h-12 rounded bg-base-300 flex items-center justify-center text-2xl">
-                                            📄
-                                        </div>
-                                    )}
-                                    <div>
-                                        <h3 className="font-bold text-lg leading-tight">{slip.title}</h3>
-                                        <div className="text-sm text-base-content/70 flex items-center gap-1 mt-1">
-                                            <Calendar size={14} />
-                                            {slip.date ? new Date(slip.date).toLocaleDateString() : '-'}
-                                        </div>
-                                    </div>
+            <div className="md:hidden">
+                {slips.map((slip, index) => (
+                    <div key={slip.id} className={`p-4 flex items-center gap-4 ${index !== slips.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                        {/* Thumbnail */}
+                        <div className="flex-shrink-0">
+                            {slip.photos.length > 0 ? (
+                                <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden cursor-pointer" onClick={() => openLightbox(slip.photos[0].url)}>
+                                    <img
+                                        src={slip.photos[0].url.startsWith('http') ? slip.photos[0].url : `/uploads/${slip.photos[0].url.split('/').pop()}`}
+                                        alt={slip.title}
+                                        className="w-full h-full object-cover"
+                                    />
                                 </div>
-                                <div className="text-right">
-                                    <div className="font-mono font-bold text-lg">
-                                        {slip.currency} {slip.amountAfterTax?.toFixed(2)}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {slip.place && (
-                                <div className="flex items-center gap-2 text-sm text-base-content/70 mb-3">
-                                    <MapPin size={14} />
-                                    {slip.place}
+                            ) : (
+                                <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
+                                    <Receipt size={20} />
                                 </div>
                             )}
+                        </div>
 
-                            <div className="flex flex-wrap gap-1 mb-3">
-                                {slip.tags && slip.tags.map(tag => (
-                                    <span key={tag.id} className="badge badge-sm badge-ghost">
-                                        {tag.name}
+                        {/* Middle: Title & Date */}
+                        <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-gray-900 truncate text-base">{slip.title}</h3>
+                            <div className="text-sm text-gray-500 mt-0.5">
+                                {slip.date ? new Date(slip.date).toLocaleDateString() : '-'}
+                            </div>
+                        </div>
+
+                        {/* Right: Amount & Tag */}
+                        <div className="text-right flex-shrink-0">
+                            <div className="font-bold text-gray-900 text-base">
+                                {slip.amountAfterTax?.toFixed(2)}
+                            </div>
+                            {slip.tags && slip.tags.length > 0 && (
+                                <div className="mt-1">
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                                        {slip.tags[0].name}
                                     </span>
-                                ))}
-                            </div>
-
-                            <div className="card-actions justify-end">
-                                <Link href={`/dashboard/edit/${slip.id}`} className="btn btn-sm btn-outline w-full">
-                                    Edit Details
-                                </Link>
-                            </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 ))}

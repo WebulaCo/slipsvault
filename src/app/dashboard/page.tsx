@@ -72,49 +72,60 @@ export default async function DashboardPage() {
 
     return (
         <div>
-            <header className="mb-10">
-                <h1 className="text-4xl font-bold mb-2">Welcome back, {session.user.name || 'User'}!</h1>
-                <p className="text-muted-foreground text-lg">Here's an overview of your recent activity.</p>
+            <header className="mb-6">
+                <h1 className="text-xl font-bold mb-1">Welcome back, {session.user.name || 'User'}!</h1>
+                <p className="text-gray-500 text-sm">Here's an overview of your recent activity.</p>
             </header>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                <div className="card bg-base-100 shadow-xl">
-                    <div className="card-body p-6">
-                        <h3 className="text-sm font-medium text-muted-foreground mb-2">Total Slips</h3>
-                        <div className="text-3xl font-bold">{totalSlips}</div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <div className="card bg-white shadow-sm border border-gray-100 rounded-xl">
+                    <div className="card-body p-4">
+                        <h3 className="text-xs font-medium text-gray-500 mb-1">Total Slips</h3>
+                        <div className="text-2xl font-bold text-gray-900">{totalSlips}</div>
                     </div>
                 </div>
-                <div className="card bg-base-100 shadow-xl">
-                    <div className="card-body p-6">
-                        <h3 className="text-sm font-medium text-muted-foreground mb-2">Total Value</h3>
-                        <div className="text-3xl font-bold">${totalValue.toFixed(2)}</div>
+                <div className="card bg-white shadow-sm border border-gray-100 rounded-xl">
+                    <div className="card-body p-4">
+                        <h3 className="text-xs font-medium text-gray-500 mb-1">Total Value</h3>
+                        <div className="text-2xl font-bold text-gray-900">${totalValue.toFixed(2)}</div>
                     </div>
                 </div>
-                <div className="card bg-base-100 shadow-xl">
-                    <div className="card-body p-6">
-                        <h3 className="text-sm font-medium text-muted-foreground mb-2">Average Slip</h3>
-                        <div className="text-3xl font-bold">${averageValue.toFixed(2)}</div>
+                <div className="card bg-white shadow-sm border border-gray-100 rounded-xl">
+                    <div className="card-body p-4">
+                        <h3 className="text-xs font-medium text-gray-500 mb-1">Average Slip</h3>
+                        <div className="text-2xl font-bold text-gray-900">${averageValue.toFixed(2)}</div>
                     </div>
                 </div>
-                <div className="card bg-base-100 shadow-xl">
-                    <div className="card-body p-6">
-                        <h3 className="text-sm font-medium text-muted-foreground mb-2">Top Category</h3>
-                        <div className="text-3xl font-bold capitalize truncate" title={topTag}>{topTag}</div>
+                <div className="card bg-white shadow-sm border border-gray-100 rounded-xl">
+                    <div className="card-body p-4">
+                        <h3 className="text-xs font-medium text-gray-500 mb-1">Top Category</h3>
+                        <div className="text-2xl font-bold text-gray-900 capitalize truncate" title={topTag}>{topTag}</div>
                     </div>
                 </div>
             </div>
 
             <DashboardCharts categoryData={categoryData} timelineData={timelineData} />
 
-            <section>
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold m-0">Recent Uploads</h2>
-                    <a href="/dashboard/slips" className="text-primary hover:underline font-medium text-sm">View All</a>
+            <section className="mb-20 md:mb-0">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-bold m-0">Recent Uploads</h2>
+                    <a href="/dashboard/slips" className="text-blue-500 hover:underline font-medium text-sm">View All</a>
                 </div>
 
                 <SlipList slips={recentSlips} />
             </section>
+
+            {/* Floating Action Button */}
+            <a
+                href="/dashboard/create"
+                className="fixed bottom-20 right-4 md:hidden w-14 h-14 bg-blue-500 rounded-full flex items-center justify-center text-white shadow-lg hover:bg-blue-600 transition-colors z-40"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </a>
         </div>
     )
 }
