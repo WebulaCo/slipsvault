@@ -88,122 +88,91 @@ export default function SlipList({ slips }: SlipListProps) {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100">
             {/* Mobile View (Custom Swipeable List) */}
             <div className="md:hidden">
-                                    />
+                {slips.map((slip) => (
+                    <SwipeableSlipItem
+                        key={slip.id}
+                        slip={slip}
+                        openLightbox={openLightbox}
+                    />
+                ))}
             </div>
-            ) : (
-            <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
-                <Receipt size={20} />
-            </div>
-                            )}
-        </div>
 
-                        {/* Middle: Title & Date */ }
-    <div className="flex-1 min-w-0">
-        <h3 className="font-semibold text-gray-900 truncate text-base">{slip.title}</h3>
-        <div className="text-sm text-gray-500 mt-0.5">
-            {slip.date ? new Date(slip.date).toLocaleDateString() : '-'}
-        </div>
-    </div>
-
-    {/* Right: Amount & Menu */ }
-    <div className="flex items-center gap-2">
-        <div className="text-right">
-            <div className="font-bold text-gray-900 text-base">
-                {slip.amountAfterTax?.toFixed(2)}
+            {/* Desktop View (Table) */}
+            <div className="hidden md:block overflow-x-auto">
+                <table className="table table-zebra w-full">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Title / Merchant</th>
+                            <th>Amount</th>
+                            <th>Place</th>
+                            <th>Tags</th>
+                            <th className="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {slips.map((slip) => (
+                            <tr key={slip.id} className="hover">
+                                <td className="whitespace-nowrap font-mono text-sm">
+                                    {slip.date ? new Date(slip.date).toLocaleDateString() : '-'}
+                                </td>
+                                <td className="font-medium">
+                                    <div className="flex items-center gap-3">
+                                        {slip.photos.length > 0 && (
+                                            <div className="avatar">
+                                                <div className="w-8 h-8 rounded bg-base-200 cursor-pointer hover:ring-2 hover:ring-primary transition-all" onClick={() => openLightbox(slip.photos[0].url)}>
+                                                    <img
+                                                        src={slip.photos[0].url.startsWith('http') ? slip.photos[0].url : `/uploads/${slip.photos[0].url.split('/').pop()}`}
+                                                        alt={slip.title}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div>
+                                            <div className="font-bold">{slip.title}</div>
+                                            <div className="text-xs opacity-50 md:hidden">{slip.place}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="font-mono">
+                                    {slip.currency} {slip.amountAfterTax?.toFixed(2)}
+                                </td>
+                                <td className="hidden md:table-cell">
+                                    {slip.place || '-'}
+                                </td>
+                                <td>
+                                    <div className="flex flex-wrap gap-1">
+                                        {slip.tags && slip.tags.map(tag => (
+                                            <span key={tag.id} className="badge badge-sm badge-ghost">
+                                                {tag.name}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </td>
+                                <td className="text-right">
+                                    <SlipMenu slip={slip} />
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
-            {slip.tags && slip.tags.length > 0 && (
-                <div className="mt-1">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
-                        {slip.tags[0].name}
-                    </span>
+
+            {/* Lightbox */}
+            {lightboxOpen && selectedImage && (
+                <div className="modal modal-open" onClick={() => setLightboxOpen(false)}>
+                    <div className="modal-box max-w-5xl p-0 bg-transparent shadow-none overflow-hidden flex items-center justify-center relative">
+                        <button className="btn btn-circle btn-sm absolute right-2 top-2 z-50 bg-base-100 border-none" onClick={() => setLightboxOpen(false)}>✕</button>
+                        <img
+                            src={selectedImage.startsWith('http') ? selectedImage : `/uploads/${selectedImage.split('/').pop()}`}
+                            alt="Full size"
+                            className="max-h-[90vh] max-w-full object-contain rounded-lg shadow-2xl bg-base-100"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    </div>
+                    <div className="modal-backdrop bg-black/80"></div>
                 </div>
             )}
         </div>
-        <SlipMenu slip={slip} />
-    </div>
-                    </div >
-                ))
-}
-            </div >
-
-    {/* Desktop View (Table) */ }
-    < div className = "hidden md:block overflow-x-auto" >
-        <table className="table table-zebra w-full">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Title / Merchant</th>
-                    <th>Amount</th>
-                    <th>Place</th>
-                    <th>Tags</th>
-                    <th className="text-right">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {slips.map((slip) => (
-                    <tr key={slip.id} className="hover">
-                        <td className="whitespace-nowrap font-mono text-sm">
-                            {slip.date ? new Date(slip.date).toLocaleDateString() : '-'}
-                        </td>
-                        <td className="font-medium">
-                            <div className="flex items-center gap-3">
-                                {slip.photos.length > 0 && (
-                                    <div className="avatar">
-                                        <div className="w-8 h-8 rounded bg-base-200 cursor-pointer hover:ring-2 hover:ring-primary transition-all" onClick={() => openLightbox(slip.photos[0].url)}>
-                                            <img
-                                                src={slip.photos[0].url.startsWith('http') ? slip.photos[0].url : `/uploads/${slip.photos[0].url.split('/').pop()}`}
-                                                alt={slip.title}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                                <div>
-                                    <div className="font-bold">{slip.title}</div>
-                                    <div className="text-xs opacity-50 md:hidden">{slip.place}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td className="font-mono">
-                            {slip.currency} {slip.amountAfterTax?.toFixed(2)}
-                        </td>
-                        <td className="hidden md:table-cell">
-                            {slip.place || '-'}
-                        </td>
-                        <td>
-                            <div className="flex flex-wrap gap-1">
-                                {slip.tags && slip.tags.map(tag => (
-                                    <span key={tag.id} className="badge badge-sm badge-ghost">
-                                        {tag.name}
-                                    </span>
-                                ))}
-                            </div>
-                        </td>
-                        <td className="text-right">
-                            <SlipMenu slip={slip} />
-                        </td>
-                    </tr>
-                ))}
-            </tbody>
-        </table>
-            </div >
-
-    {/* Lightbox */ }
-{
-    lightboxOpen && selectedImage && (
-        <div className="modal modal-open" onClick={() => setLightboxOpen(false)}>
-            <div className="modal-box max-w-5xl p-0 bg-transparent shadow-none overflow-hidden flex items-center justify-center relative">
-                <button className="btn btn-circle btn-sm absolute right-2 top-2 z-50 bg-base-100 border-none" onClick={() => setLightboxOpen(false)}>✕</button>
-                <img
-                    src={selectedImage.startsWith('http') ? selectedImage : `/uploads/${selectedImage.split('/').pop()}`}
-                    alt="Full size"
-                    className="max-h-[90vh] max-w-full object-contain rounded-lg shadow-2xl bg-base-100"
-                    onClick={(e) => e.stopPropagation()}
-                />
-            </div>
-            <div className="modal-backdrop bg-black/80"></div>
-        </div>
-    )
-}
-        </div >
     )
 }
