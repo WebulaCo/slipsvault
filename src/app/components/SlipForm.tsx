@@ -223,7 +223,7 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
     const isDark = theme === 'dark'
     const inputClass = isDark
         ? "input input-bordered w-full bg-[#252a3a] border-gray-700 text-white placeholder-gray-500 focus:border-blue-500"
-        : "input input-bordered w-full"
+        : "input input-bordered w-full bg-white focus:border-brand-teal focus:ring-1 focus:ring-brand-teal"
     const labelClass = isDark ? "label-text font-medium text-gray-300" : "label-text font-medium"
 
     return (
@@ -242,8 +242,8 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                 {/* Upload Area */}
                 <div className="form-control w-full">
                     <div
-                        className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${isDark ? 'border-gray-700 bg-[#252a3a]/50' : 'border-base-300'
-                            } ${dragOver ? 'border-blue-500 bg-blue-500/10' : ''}`}
+                        className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${isDark ? 'border-gray-700 bg-[#252a3a]/50' : 'border-gray-200 bg-white'
+                            } ${dragOver ? 'border-brand-teal bg-brand-teal/10' : ''}`}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
@@ -261,7 +261,7 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                         />
                         <label htmlFor="photo-upload" className="cursor-pointer flex flex-col items-center gap-4">
                             {photoUrl ? (
-                                <div className="relative flex items-center justify-center bg-base-200 rounded-lg overflow-hidden p-2 w-full">
+                                <div className="relative flex items-center justify-center bg-gray-50 rounded-lg overflow-hidden p-2 w-full">
                                     <img
                                         src={photoUrl.startsWith('http') ? photoUrl : `/uploads/${photoUrl.split('/').pop()}`}
                                         alt="Preview"
@@ -270,8 +270,8 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                                 </div>
                             ) : (
                                 <div className="h-32 w-full flex items-center justify-center">
-                                    <div className={`w-16 h-16 rounded-full flex items-center justify-center ${isDark ? 'bg-[#2f3545]' : 'bg-gray-100'}`}>
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isDark ? 'text-blue-500' : 'text-gray-500'}>
+                                    <div className={`w-16 h-16 rounded-full flex items-center justify-center ${isDark ? 'bg-[#2f3545]' : 'bg-brand-teal/10'}`}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isDark ? 'text-blue-500' : 'text-brand-teal'}>
                                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                                             <polyline points="17 8 12 3 7 8" />
                                             <line x1="12" x2="12" y1="3" y2="15" />
@@ -284,7 +284,7 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                                     Tap to upload a slip from your gallery or camera
                                 </p>
                             </div>
-                            <span className="w-full btn btn-primary bg-blue-600 hover:bg-blue-700 border-none text-white normal-case text-base font-medium h-12 rounded-xl">
+                            <span className="w-full btn btn-primary bg-brand-teal hover:bg-[#2a8c8e] border-none text-white normal-case text-base font-medium h-12 rounded-xl shadow-md">
                                 {isAnalyzing ? (
                                     <>
                                         <span className="loading loading-spinner loading-xs"></span>
@@ -306,7 +306,7 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
 
                 <div className={`flex items-center gap-4 my-8 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
                     <div className="h-px bg-current flex-1 opacity-20"></div>
-                    <span className="text-xs font-medium">OR</span>
+                    <span className="text-xs font-medium">OR ENTER MANUALLY</span>
                     <div className="h-px bg-current flex-1 opacity-20"></div>
                 </div>
 
@@ -321,7 +321,7 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             className={inputClass}
-                            placeholder="e.g. Engen Blouberg Motors"
+                            placeholder="e.g. Cafe"
                             required
                         />
                     </div>
@@ -350,7 +350,8 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                         <label className="label">
                             <span className={labelClass}>Category</span>
                         </label>
-                        <select className={`select select-bordered w-full ${isDark ? 'bg-[#252a3a] border-gray-700 text-white' : ''}`}>
+                        <select className={`select select-bordered w-full ${isDark ? 'bg-[#252a3a] border-gray-700 text-white' : 'bg-white focus:border-brand-teal focus:ring-1 focus:ring-brand-teal'}`}>
+                            <option>Select a category</option>
                             <option>Fuel</option>
                             <option>Groceries</option>
                             <option>Travel</option>
@@ -377,7 +378,7 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                 </div>
 
                 <div className="pt-4">
-                    <button type="submit" className="w-full btn btn-primary bg-blue-600 hover:bg-blue-700 border-none text-white h-12 rounded-xl text-lg font-medium" disabled={isSubmitting || isAnalyzing}>
+                    <button type="submit" className="w-full btn btn-primary bg-brand-navy hover:bg-[#0d2e4d] border-none text-white h-12 rounded-xl text-lg font-medium shadow-lg" disabled={isSubmitting || isAnalyzing}>
                         {isSubmitting && <span className="loading loading-spinner loading-sm"></span>}
                         {submitLabel}
                     </button>

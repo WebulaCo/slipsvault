@@ -81,14 +81,14 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
         <div className="pb-20">
             {/* Header */}
             <header className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2 text-blue-600">
+                <div className="flex items-center gap-2 text-brand-teal">
                     <Link href="/dashboard" className="flex items-center gap-1 font-medium">
                         <ChevronLeft size={20} />
                         Dashboard
                     </Link>
                 </div>
-                <h1 className="text-xl font-bold text-gray-900">All Slips</h1>
-                <Link href="/dashboard/create" className="text-gray-900">
+                <h1 className="text-xl font-bold text-brand-navy">All Slips</h1>
+                <Link href="/dashboard/create" className="w-10 h-10 bg-brand-navy rounded-full flex items-center justify-center text-white shadow-md hover:bg-[#0d2e4d] transition-colors">
                     <Plus size={24} />
                 </Link>
             </header>
@@ -99,21 +99,21 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
                 <input
                     type="text"
                     placeholder="Search by merchant, tag..."
-                    className="w-full bg-gray-100 border-none rounded-lg py-3 pl-10 pr-4 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500"
+                    className="w-full bg-white border border-gray-200 rounded-lg py-3 pl-10 pr-4 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-brand-teal focus:border-transparent"
                     defaultValue={query}
                 />
             </div>
 
             {/* Filter Chips */}
             <div className="flex gap-2 overflow-x-auto pb-2 mb-6 no-scrollbar">
-                <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap">
+                <button className="flex items-center gap-2 bg-brand-teal text-white px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap shadow-sm">
                     <SlidersHorizontal size={16} />
                     Filter
                 </button>
-                <button className="bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap">
+                <button className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap">
                     Date: All time
                 </button>
-                <button className="bg-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap">
+                <button className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap">
                     Amount
                 </button>
             </div>
@@ -122,19 +122,19 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
             <div className="space-y-6">
                 {Object.entries(slipsByMonth).map(([month, monthSlips]) => (
                     <div key={month}>
-                        <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">{month}</h2>
-                        <div className="bg-gray-50 rounded-xl overflow-hidden">
+                        <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 pl-1">{month}</h2>
+                        <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
                             {monthSlips.map((slip, index) => (
                                 <Link
                                     key={slip.id}
                                     href={`/dashboard/slips/${slip.id}`}
-                                    className={`block p-4 hover:bg-gray-100 transition-colors ${index !== monthSlips.length - 1 ? 'border-b border-gray-100' : ''}`}
+                                    className={`block p-4 hover:bg-gray-50 transition-colors ${index !== monthSlips.length - 1 ? 'border-b border-gray-100' : ''}`}
                                 >
                                     <div className="flex items-center gap-4">
                                         {/* Thumbnail */}
                                         <div className="flex-shrink-0">
                                             {slip.photos.length > 0 ? (
-                                                <div className="w-12 h-12 rounded-lg bg-white overflow-hidden border border-gray-100">
+                                                <div className="w-12 h-12 rounded-lg bg-gray-50 overflow-hidden border border-gray-100">
                                                     <img
                                                         src={slip.photos[0].url.startsWith('http') ? slip.photos[0].url : `/uploads/${slip.photos[0].url.split('/').pop()}`}
                                                         alt={slip.title}
@@ -142,7 +142,7 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
                                                     />
                                                 </div>
                                             ) : (
-                                                <div className="w-12 h-12 rounded-lg bg-white border border-gray-100 flex items-center justify-center text-gray-400">
+                                                <div className="w-12 h-12 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400">
                                                     <Receipt size={20} />
                                                 </div>
                                             )}
@@ -150,7 +150,7 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
 
                                         {/* Middle: Title & Date */}
                                         <div className="flex-1 min-w-0">
-                                            <h3 className="font-semibold text-gray-900 truncate text-base">{slip.title}</h3>
+                                            <h3 className="font-semibold text-brand-navy truncate text-base">{slip.title}</h3>
                                             <div className="text-sm text-gray-500 mt-0.5">
                                                 {slip.date ? new Date(slip.date).toLocaleDateString() : '-'}
                                             </div>
@@ -159,18 +159,18 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
                                         {/* Right: Amount & Tag & Chevron */}
                                         <div className="text-right flex-shrink-0 flex items-center gap-3">
                                             <div>
-                                                <div className="font-bold text-gray-900 text-base">
+                                                <div className="font-bold text-brand-navy text-base">
                                                     ${slip.amountAfterTax?.toFixed(2)}
                                                 </div>
                                                 {slip.tags && slip.tags.length > 0 && (
                                                     <div className="mt-1 flex justify-end">
-                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#fff8e1] text-[#f59e0b]">
                                                             {slip.tags[0].name}
                                                         </span>
                                                     </div>
                                                 )}
                                             </div>
-                                            <ChevronRight size={20} className="text-gray-400" />
+                                            <ChevronRight size={20} className="text-gray-300" />
                                         </div>
                                     </div>
                                 </Link>

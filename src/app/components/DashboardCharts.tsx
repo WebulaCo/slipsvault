@@ -19,14 +19,14 @@ interface DashboardChartsProps {
     timelineData: { name: string; value: number }[]
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d']
+const COLORS = ['#38a3a5', '#113f67', '#57c4c6', '#22577a', '#80ced6', '#0f3c5f']
 
 export default function DashboardCharts({ categoryData, timelineData }: DashboardChartsProps) {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <div className="card bg-base-100 shadow-xl">
-                <div className="card-body">
-                    <h3 className="card-title text-lg mb-4">Expenses by Category</h3>
+            <div className="card bg-white shadow-sm border border-gray-100 rounded-xl">
+                <div className="card-body p-4">
+                    <h3 className="text-lg font-bold mb-4 text-brand-navy">Expenses by Category</h3>
                     <div className="h-[300px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
@@ -34,10 +34,9 @@ export default function DashboardCharts({ categoryData, timelineData }: Dashboar
                                     data={categoryData}
                                     cx="50%"
                                     cy="50%"
-                                    labelLine={false}
-                                    label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                    innerRadius={60}
                                     outerRadius={80}
-                                    fill="#8884d8"
+                                    paddingAngle={5}
                                     dataKey="value"
                                 >
                                     {categoryData.map((entry, index) => (
@@ -45,15 +44,16 @@ export default function DashboardCharts({ categoryData, timelineData }: Dashboar
                                     ))}
                                 </Pie>
                                 <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+                                <Legend />
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
             </div>
 
-            <div className="card bg-base-100 shadow-xl">
-                <div className="card-body">
-                    <h3 className="card-title text-lg mb-4">Expenses over Time</h3>
+            <div className="card bg-white shadow-sm border border-gray-100 rounded-xl">
+                <div className="card-body p-4">
+                    <h3 className="text-lg font-bold mb-4 text-brand-navy">Expenses over Time</h3>
                     <div className="h-[300px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
@@ -65,12 +65,14 @@ export default function DashboardCharts({ categoryData, timelineData }: Dashboar
                                     bottom: 5,
                                 }}
                             >
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="name" />
-                                <YAxis />
-                                <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
-                                <Legend />
-                                <Bar dataKey="value" name="Amount" fill="#8884d8" />
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
+                                <Tooltip
+                                    formatter={(value: number) => `$${value.toFixed(2)}`}
+                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                />
+                                <Bar dataKey="value" name="Amount" fill="#38a3a5" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>

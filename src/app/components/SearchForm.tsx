@@ -32,7 +32,7 @@ export default function SearchForm() {
                 <Link href="/dashboard" className="text-gray-900">
                     <ChevronLeft size={24} />
                 </Link>
-                <h1 className="text-xl font-bold flex-1 text-center pr-10">Search & Filter</h1>
+                <h1 className="text-xl font-bold flex-1 text-center pr-10 text-brand-navy">Search & Filter</h1>
             </header>
 
             <div className="space-y-6 flex-1">
@@ -47,7 +47,7 @@ export default function SearchForm() {
                             value={keyword}
                             onChange={(e) => setKeyword(e.target.value)}
                             placeholder="e.g. Engen, Food"
-                            className="input input-bordered w-full pl-10 bg-white"
+                            className="input input-bordered w-full pl-10 bg-white focus:border-brand-teal focus:ring-1 focus:ring-brand-teal"
                         />
                     </div>
                 </div>
@@ -61,7 +61,7 @@ export default function SearchForm() {
                             type="date"
                             value={startDate}
                             onChange={(e) => setStartDate(e.target.value)}
-                            className="input input-bordered w-full bg-white text-sm px-2"
+                            className="input input-bordered w-full bg-white text-sm px-2 focus:border-brand-teal focus:ring-1 focus:ring-brand-teal"
                             placeholder="Start Date"
                         />
                         <span className="text-gray-400">-</span>
@@ -69,7 +69,7 @@ export default function SearchForm() {
                             type="date"
                             value={endDate}
                             onChange={(e) => setEndDate(e.target.value)}
-                            className="input input-bordered w-full bg-white text-sm px-2"
+                            className="input input-bordered w-full bg-white text-sm px-2 focus:border-brand-teal focus:ring-1 focus:ring-brand-teal"
                             placeholder="End Date"
                         />
                     </div>
@@ -86,8 +86,8 @@ export default function SearchForm() {
                                 type="button"
                                 onClick={() => setCategory(cat)}
                                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${category === cat
-                                    ? 'bg-purple-100 text-purple-700'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    ? 'bg-brand-navy text-white shadow-md'
+                                    : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
                                     }`}
                             >
                                 {cat}
@@ -100,7 +100,7 @@ export default function SearchForm() {
             <div className="pt-6 mt-auto pb-6">
                 <button
                     onClick={handleApplyFilters}
-                    className="btn btn-primary w-full bg-blue-600 hover:bg-blue-700 border-none text-white h-12 rounded-xl text-lg font-medium gap-2"
+                    className="btn btn-primary w-full bg-brand-teal hover:bg-[#2a8c8e] border-none text-white h-12 rounded-xl text-lg font-medium gap-2 shadow-lg"
                 >
                     <Filter size={20} />
                     Apply Filters
