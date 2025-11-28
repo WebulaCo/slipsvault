@@ -20,7 +20,7 @@ export default function TopBar({ user }: TopBarProps) {
                 <Link href="/dashboard/search" className="text-gray-500">
                     <Search size={24} />
                 </Link>
-                <Link href="/dashboard/settings" className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white text-sm font-medium">
+                <Link href="/dashboard/settings" className="w-8 h-8 rounded-full bg-brand-navy flex items-center justify-center text-white text-sm font-medium">
                     {user.name?.[0] || 'U'}
                 </Link>
             </div>
