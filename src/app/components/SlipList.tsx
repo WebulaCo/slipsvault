@@ -141,8 +141,8 @@ export default function SlipList({ slips }: SlipListProps) {
                                     </div>
                                 </td>
                                 <td className="text-right">
-                                    <Link href={`/dashboard/edit/${slip.id}`} className="btn btn-ghost btn-xs">
-                                        Edit
+                                    <Link href={`/dashboard/slips/${slip.id}`} className="btn btn-ghost btn-xs">
+                                        View
                                     </Link>
                                 </td>
                             </tr>

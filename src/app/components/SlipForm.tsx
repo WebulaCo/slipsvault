@@ -24,9 +24,10 @@ interface SlipFormProps {
     initialData?: SlipData
     action: (formData: FormData) => Promise<void>
     submitLabel: string
+    theme?: 'light' | 'dark'
 }
 
-export default function SlipForm({ initialData, action }: SlipFormProps) {
+export default function SlipForm({ initialData, action, submitLabel, theme = 'light' }: SlipFormProps) {
     const router = useRouter()
     const searchParams = useSearchParams() // Correctly use useSearchParams hook
     const q = searchParams.get('q') // Get 'q' from search params
@@ -219,6 +220,12 @@ export default function SlipForm({ initialData, action }: SlipFormProps) {
         }
     }
 
+    const isDark = theme === 'dark'
+    const inputClass = isDark
+        ? "input input-bordered w-full bg-[#252a3a] border-gray-700 text-white placeholder-gray-500 focus:border-blue-500"
+        : "input input-bordered w-full"
+    const labelClass = isDark ? "label-text font-medium text-gray-300" : "label-text font-medium"
+
     return (
         <>
             <form onSubmit={handleSubmit} className="space-y-6" encType="multipart/form-data">
@@ -232,185 +239,156 @@ export default function SlipForm({ initialData, action }: SlipFormProps) {
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-4">
-                        <div className="form-control w-full">
-                            <label className="label">
-                                <span className="label-text font-medium">Slip Photo</span>
-                            </label>
-                            <div
-                                className={`border-2 border-dashed rounded-box p-8 text-center transition-all duration-200 ${dragOver ? 'border-primary bg-primary/10 scale-[1.02]' : 'border-base-300 hover:border-primary/50'
-                                    }`}
-                                onDragOver={handleDragOver}
-                                onDragLeave={handleDragLeave}
-                                onDrop={handleDrop}
-                            >
-                                <input
-                                    type="file"
-                                    name="photo"
-                                    accept="image/*"
-                                    onChange={(e) => {
-                                        const selectedFile = e.target.files?.[0];
-                                        if (selectedFile) handleFileChange(selectedFile);
-                                    }}
-                                    className="hidden"
-                                    id="photo-upload"
-                                />
-                                <label htmlFor="photo-upload" className="cursor-pointer flex flex-col items-center gap-4">
-                                    {photoUrl ? (
-                                        <div className="relative flex items-center justify-center bg-base-200 rounded-lg overflow-hidden p-2 w-full">
-                                            <img
-                                                src={photoUrl.startsWith('http') ? photoUrl : `/uploads/${photoUrl.split('/').pop()}`}
-                                                alt="Preview"
-                                                className="w-full max-h-[400px] object-contain shadow-sm rounded-md"
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div className="h-48 w-full flex items-center justify-center text-base-content/40">
-                                            <div className="flex flex-col items-center gap-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                                                </svg>
-                                                <span className="text-lg font-medium">Drag & Drop or Click to Upload</span>
-                                                <span className="text-sm opacity-70">Supports JPG, PNG</span>
-                                            </div>
-                                        </div>
-                                    )}
-                                    <span className="btn btn-sm btn-outline btn-primary">
-                                        {isAnalyzing ? (
-                                            <>
-                                                <span className="loading loading-spinner loading-xs"></span>
-                                                Analyzing...
-                                            </>
-                                        ) : (photoUrl ? 'Change Photo' : 'Select Photo')}
-                                    </span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div className="form-control w-full">
-                            <label className="label">
-                                <span className="label-text font-medium">Title / Merchant</span>
-                            </label>
-                            <input
-                                type="text"
-                                name="title"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                                className="input input-bordered w-full"
-                                placeholder="e.g. Starbucks, Uber"
-                                required
-                            />
-                        </div>
-
-                        <div className="form-control w-full">
-                            <label className="label">
-                                <span className="label-text font-medium">Place / Location</span>
-                            </label>
-                            <input
-                                type="text"
-                                name="place"
-                                value={place}
-                                onChange={(e) => setPlace(e.target.value)}
-                                className="input input-bordered w-full"
-                                placeholder="e.g. 123 Main St"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="form-control w-full">
-                                <label className="label">
-                                    <span className="label-text font-medium">Date</span>
-                                </label>
-                                <input
-                                    type="date"
-                                    name="date"
-                                    value={date}
-                                    onChange={(e) => setDate(e.target.value)}
-                                    className="input input-bordered w-full"
-                                />
-                            </div>
-                            <div className="form-control w-full">
-                                <label className="label">
-                                    <span className="label-text font-medium">Amount</span>
-                                </label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50 font-medium">
-                                        {currency}
-                                    </span>
-                                    <input
-                                        type="number"
-                                        name="amountAfterTax"
-                                        value={amount}
-                                        onChange={(e) => setAmount(e.target.value)}
-                                        step="0.01"
-                                        className="input input-bordered w-full pl-10"
-                                        placeholder="0.00"
+                {/* Upload Area */}
+                <div className="form-control w-full">
+                    <div
+                        className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${isDark ? 'border-gray-700 bg-[#252a3a]/50' : 'border-base-300'
+                            } ${dragOver ? 'border-blue-500 bg-blue-500/10' : ''}`}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                    >
+                        <input
+                            type="file"
+                            name="photo"
+                            accept="image/*"
+                            onChange={(e) => {
+                                const selectedFile = e.target.files?.[0];
+                                if (selectedFile) handleFileChange(selectedFile);
+                            }}
+                            className="hidden"
+                            id="photo-upload"
+                        />
+                        <label htmlFor="photo-upload" className="cursor-pointer flex flex-col items-center gap-4">
+                            {photoUrl ? (
+                                <div className="relative flex items-center justify-center bg-base-200 rounded-lg overflow-hidden p-2 w-full">
+                                    <img
+                                        src={photoUrl.startsWith('http') ? photoUrl : `/uploads/${photoUrl.split('/').pop()}`}
+                                        alt="Preview"
+                                        className="w-full max-h-[400px] object-contain shadow-sm rounded-md"
                                     />
                                 </div>
+                            ) : (
+                                <div className="h-32 w-full flex items-center justify-center">
+                                    <div className={`w-16 h-16 rounded-full flex items-center justify-center ${isDark ? 'bg-[#2f3545]' : 'bg-gray-100'}`}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isDark ? 'text-blue-500' : 'text-gray-500'}>
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                            <polyline points="17 8 12 3 7 8" />
+                                            <line x1="12" x2="12" y1="3" y2="15" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            )}
+                            <div className="text-center">
+                                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                    Tap to upload a slip from your gallery or camera
+                                </p>
                             </div>
-                        </div>
-
-                        <div className="form-control w-full">
-                            <label className="label">
-                                <span className="label-text font-medium">Tags</span>
-                            </label>
-                            <input
-                                type="text"
-                                value={tags}
-                                onChange={(e) => setTags(e.target.value)}
-                                className="input input-bordered w-full"
-                                placeholder="e.g. Food, Travel, Business"
-                            />
-                            <label className="label">
-                                <span className="label-text-alt text-base-content/60">Separate multiple tags with commas.</span>
-                            </label>
-                        </div>
-
-                        <div className="form-control w-full">
-                            <label className="label">
-                                <span className="label-text font-medium">Summary / Notes</span>
-                            </label>
-                            <textarea
-                                name="summary"
-                                value={summary}
-                                onChange={(e) => setSummary(e.target.value)}
-                                className="textarea textarea-bordered h-32 resize-none text-base"
-                                placeholder="Add any additional notes..."
-                            />
-                        </div>
+                            <span className="w-full btn btn-primary bg-blue-600 hover:bg-blue-700 border-none text-white normal-case text-base font-medium h-12 rounded-xl">
+                                {isAnalyzing ? (
+                                    <>
+                                        <span className="loading loading-spinner loading-xs"></span>
+                                        Analyzing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                                            <circle cx="12" cy="13" r="4" />
+                                        </svg>
+                                        {photoUrl ? 'Change Photo' : 'Upload Slip'}
+                                    </>
+                                )}
+                            </span>
+                        </label>
                     </div>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-6 border-t border-base-300">
-                    <Link href="/dashboard" className="btn btn-ghost">
-                        Cancel
-                    </Link>
-                    {initialData?.id && (
-                        <button
-                            type="button"
-                            onClick={handleDeleteClick}
-                            className="btn btn-error btn-outline"
-                            disabled={isSubmitting}
-                        >
-                            Delete
-                        </button>
-                    )}
-                    <button type="submit" className="btn btn-primary px-8" disabled={isSubmitting || isAnalyzing}>
+                <div className={`flex items-center gap-4 my-8 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+                    <div className="h-px bg-current flex-1 opacity-20"></div>
+                    <span className="text-xs font-medium">OR</span>
+                    <div className="h-px bg-current flex-1 opacity-20"></div>
+                </div>
+
+                <div className="space-y-4">
+                    <div className="form-control w-full">
+                        <label className="label">
+                            <span className={labelClass}>Title / Merchant</span>
+                        </label>
+                        <input
+                            type="text"
+                            name="title"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            className={inputClass}
+                            placeholder="e.g. Engen Blouberg Motors"
+                            required
+                        />
+                    </div>
+
+                    <div className="form-control w-full">
+                        <label className="label">
+                            <span className={labelClass}>Amount</span>
+                        </label>
+                        <div className="relative">
+                            <span className={`absolute left-3 top-1/2 -translate-y-1/2 font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                $
+                            </span>
+                            <input
+                                type="number"
+                                name="amountAfterTax"
+                                value={amount}
+                                onChange={(e) => setAmount(e.target.value)}
+                                step="0.01"
+                                className={`${inputClass} pl-8`}
+                                placeholder="0.00"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="form-control w-full">
+                        <label className="label">
+                            <span className={labelClass}>Category</span>
+                        </label>
+                        <select className={`select select-bordered w-full ${isDark ? 'bg-[#252a3a] border-gray-700 text-white' : ''}`}>
+                            <option>Fuel</option>
+                            <option>Groceries</option>
+                            <option>Travel</option>
+                            <option>Utilities</option>
+                        </select>
+                    </div>
+
+                    <div className="form-control w-full">
+                        <label className="label">
+                            <span className={labelClass}>Date</span>
+                        </label>
+                        <input
+                            type="date"
+                            name="date"
+                            value={date}
+                            onChange={(e) => setDate(e.target.value)}
+                            className={inputClass}
+                        />
+                    </div>
+
+                    {/* Hidden fields for compatibility or future use */}
+                    <input type="hidden" name="place" value={place} />
+                    <input type="hidden" name="tags" value={tags} />
+                </div>
+
+                <div className="pt-4">
+                    <button type="submit" className="w-full btn btn-primary bg-blue-600 hover:bg-blue-700 border-none text-white h-12 rounded-xl text-lg font-medium" disabled={isSubmitting || isAnalyzing}>
                         {isSubmitting && <span className="loading loading-spinner loading-sm"></span>}
-                        {initialData ? 'Update Slip' : 'Create Slip'}
+                        {submitLabel}
                     </button>
                 </div>
             </form>
 
-            {/* Duplicate Warning Modal */}
+            {/* Modals remain mostly the same, just basic styling */}
             {showDuplicateModal && (
                 <div className="modal modal-open">
-                    <div className="modal-box">
+                    <div className="modal-box text-gray-900">
                         <h3 className="font-bold text-lg text-warning flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                             Possible Duplicate Found
                         </h3>
                         <p className="py-4">
@@ -432,10 +410,9 @@ export default function SlipForm({ initialData, action }: SlipFormProps) {
                 </div>
             )}
 
-            {/* Delete Confirmation Modal */}
             {showDeleteModal && (
                 <div className="modal modal-open">
-                    <div className="modal-box">
+                    <div className="modal-box text-gray-900">
                         <h3 className="font-bold text-lg text-error">Delete Slip?</h3>
                         <p className="py-4">
                             Are you sure you want to delete this slip? This action cannot be undone.
