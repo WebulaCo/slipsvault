@@ -110,7 +110,7 @@ export default function Sidebar({ user, tags }: SidebarProps) {
                 )}
 
                 <div className="border-t border-base-300 pt-4 mt-auto">
-                    <div className="flex items-center gap-3 mb-4 px-2">
+                    <Link href="/dashboard/settings" className="flex items-center gap-3 mb-4 px-2 hover:bg-base-300 rounded-lg py-2 transition-colors">
                         <div className="avatar placeholder">
                             <div className="bg-neutral text-neutral-content rounded-full w-10">
                                 <span className="text-xs">{user.name?.[0] || 'U'}</span>
@@ -124,7 +124,7 @@ export default function Sidebar({ user, tags }: SidebarProps) {
                                 {user.email}
                             </p>
                         </div>
-                    </div>
+                    </Link>
 
                     <button
                         onClick={() => signOut()}

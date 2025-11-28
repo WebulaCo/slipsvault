@@ -3,7 +3,9 @@
 import { Slip, Tag, Photo } from '@prisma/client'
 import Link from 'next/link'
 import { useState } from 'react'
-import { MapPin, Calendar, X, Receipt } from 'lucide-react'
+import { MapPin, Calendar, X, Receipt, MoreVertical, Edit, Trash2 } from 'lucide-react'
+import { deleteSlip } from '@/app/actions'
+import { useRouter } from 'next/navigation'
 
 type SlipWithRelations = Slip & {
     tags: Tag[]
@@ -17,11 +19,50 @@ interface SlipListProps {
 export default function SlipList({ slips }: SlipListProps) {
     const [lightboxOpen, setLightboxOpen] = useState(false)
     const [selectedImage, setSelectedImage] = useState<string | null>(null)
+    const [deletingId, setDeletingId] = useState<string | null>(null)
+    const router = useRouter()
 
     const openLightbox = (url: string) => {
         setSelectedImage(url)
         setLightboxOpen(true)
     }
+
+    const handleDelete = async (id: string) => {
+        if (confirm('Are you sure you want to delete this slip?')) {
+            setDeletingId(id)
+            try {
+                await deleteSlip(id)
+                router.refresh()
+            } catch (error) {
+                console.error("Failed to delete", error)
+                alert('Failed to delete slip')
+            } finally {
+                setDeletingId(null)
+            }
+        }
+    }
+
+    const SlipMenu = ({ slip }: { slip: SlipWithRelations }) => (
+        <div className="dropdown dropdown-end">
+            <div tabIndex={0} role="button" className="btn btn-ghost btn-circle btn-sm">
+                <MoreVertical size={20} className="text-gray-400" />
+            </div>
+            <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow-lg bg-white rounded-box w-52 border border-gray-100">
+                <li>
+                    <Link href={`/dashboard/slips/${slip.id}`} className="flex items-center gap-2 text-gray-700 hover:bg-gray-50">
+                        <Edit size={16} />
+                        Edit / View
+                    </Link>
+                </li>
+                <li>
+                    <button onClick={() => handleDelete(slip.id)} className="flex items-center gap-2 text-red-600 hover:bg-red-50">
+                        {deletingId === slip.id ? <span className="loading loading-spinner loading-xs"></span> : <Trash2 size={16} />}
+                        Delete
+                    </button>
+                </li>
+            </ul>
+        </div>
+    )
 
     if (slips.length === 0) {
         return (
@@ -71,18 +112,21 @@ export default function SlipList({ slips }: SlipListProps) {
                             </div>
                         </div>
 
-                        {/* Right: Amount & Tag */}
-                        <div className="text-right flex-shrink-0">
-                            <div className="font-bold text-gray-900 text-base">
-                                {slip.amountAfterTax?.toFixed(2)}
-                            </div>
-                            {slip.tags && slip.tags.length > 0 && (
-                                <div className="mt-1">
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
-                                        {slip.tags[0].name}
-                                    </span>
+                        {/* Right: Amount & Menu */}
+                        <div className="flex items-center gap-2">
+                            <div className="text-right">
+                                <div className="font-bold text-gray-900 text-base">
+                                    {slip.amountAfterTax?.toFixed(2)}
                                 </div>
-                            )}
+                                {slip.tags && slip.tags.length > 0 && (
+                                    <div className="mt-1">
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                                            {slip.tags[0].name}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                            <SlipMenu slip={slip} />
                         </div>
                     </div>
                 ))}
@@ -141,9 +185,7 @@ export default function SlipList({ slips }: SlipListProps) {
                                     </div>
                                 </td>
                                 <td className="text-right">
-                                    <Link href={`/dashboard/slips/${slip.id}`} className="btn btn-ghost btn-xs">
-                                        View
-                                    </Link>
+                                    <SlipMenu slip={slip} />
                                 </td>
                             </tr>
                         ))}
