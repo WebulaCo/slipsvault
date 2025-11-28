@@ -36,8 +36,8 @@ export async function analyzeSlip(formData: FormData) {
         const arrayBuffer = await file.arrayBuffer()
         const buffer = Buffer.from(arrayBuffer)
 
-        console.log("analyzeSlip: Starting Gemini analysis...");
-        const data = await analyzeImageWithGemini(buffer);
+        console.log(`analyzeSlip: Starting Gemini analysis with mimeType: ${file.type}`);
+        const data = await analyzeImageWithGemini(buffer, file.type);
         console.log("analyzeSlip: Analyzed Data:", data);
 
         return { url, data }

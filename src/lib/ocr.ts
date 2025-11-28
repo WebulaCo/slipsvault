@@ -40,7 +40,7 @@ export async function extractTextFromImage(buffer: Buffer): Promise<string> {
     }
 }
 
-export async function analyzeImageWithGemini(buffer: Buffer): Promise<SlipData> {
+export async function analyzeImageWithGemini(buffer: Buffer, mimeType: string = "image/jpeg"): Promise<SlipData> {
     try {
         if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
             throw new Error("GOOGLE_GENERATIVE_AI_API_KEY is not set");
@@ -53,10 +53,14 @@ export async function analyzeImageWithGemini(buffer: Buffer): Promise<SlipData> 
             generationConfig: { responseMimeType: "application/json" }
         });
 
+        const validMimeType = mimeType || "image/jpeg";
+
+        console.log(`analyzeImageWithGemini: Processing image. Size: ${buffer.length}, MimeType: ${validMimeType}`);
+
         const imagePart = {
             inlineData: {
                 data: buffer.toString("base64"),
-                mimeType: "image/jpeg",
+                mimeType: validMimeType,
             },
         };
 
@@ -76,12 +80,17 @@ export async function analyzeImageWithGemini(buffer: Buffer): Promise<SlipData> 
         const response = await result.response;
         const text = response.text();
 
-        return JSON.parse(text) as SlipData;
+        console.log("analyzeImageWithGemini: Raw Gemini Response:", text);
 
-    } catch (error) {
+        // Clean the text to ensure it's valid JSON (sometimes models add markdown code blocks)
+        const cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+        return JSON.parse(cleanedText) as SlipData;
+
+    } catch (error: any) {
         console.error("Gemini Analysis Failed:", error);
-        // Fallback to empty object or throw
-        return {};
+        const errorMessage = error?.message || "Unknown error";
+        throw new Error(`Gemini Analysis Failed: ${errorMessage}`);
     }
 }
 

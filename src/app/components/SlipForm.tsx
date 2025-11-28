@@ -64,7 +64,9 @@ export default function SlipForm({ initialData, action }: SlipFormProps) {
             const result = await analyzeSlip(formData)
             setPhotoUrl(result.url)
 
-            if (result.data && Object.keys(result.data).length > 0) {
+            const hasData = result.data && (result.data.place || result.data.date || result.data.amountAfterTax);
+
+            if (hasData) {
                 if (result.data.place) {
                     setPlace(result.data.place)
                     if (!title) setTitle(result.data.place)
@@ -78,16 +80,17 @@ export default function SlipForm({ initialData, action }: SlipFormProps) {
                     setTags(result.data.tags.join(', '))
                 }
             } else {
-                console.warn("Analysis returned empty data");
-                // Don't alert here to avoid annoying user if they just want to upload, 
-                // but maybe show a toast or small message? 
-                // For now, let's just log it. The user will see fields empty.
+                console.warn("Analysis returned empty data", result.data);
+                const msg = `Analysis completed but no usable data found. Raw response: ${JSON.stringify(result.data)}`;
+                setError(msg);
+                alert(msg); // Force visibility
             }
-        } catch (_e) { // Changed error to _e as it's not used
-            console.error("Analysis failed", _e) // Log the error
-            alert("Could not analyze photo. Please enter details manually.")
+        } catch (err: any) {
+            console.error("Analysis failed", err)
+            // Show the actual error message for debugging
+            setError(err.message || "Could not analyze photo. Please check your API key or enter details manually.")
         } finally {
-            setIsAnalyzing(false) // Use new state name
+            setIsAnalyzing(false)
         }
     }
 
