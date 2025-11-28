@@ -72,42 +72,45 @@ export default async function DashboardPage() {
 
     return (
         <div>
-            <header style={{ marginBottom: '2.5rem' }}>
-                <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Welcome back, {session.user.name || 'User'}!</h1>
-                <p style={{ color: 'hsl(var(--muted-foreground))', fontSize: '1.1rem' }}>Here's an overview of your recent activity.</p>
+            <header className="mb-10">
+                <h1 className="text-4xl font-bold mb-2">Welcome back, {session.user.name || 'User'}!</h1>
+                <p className="text-muted-foreground text-lg">Here's an overview of your recent activity.</p>
             </header>
 
             {/* Stats Cards */}
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-                gap: '1.5rem',
-                marginBottom: '2.5rem'
-            }}>
-                <div className="card">
-                    <h3 style={{ fontSize: '0.875rem', color: 'hsl(var(--muted-foreground))', marginBottom: '0.5rem' }}>Total Slips</h3>
-                    <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>{totalSlips}</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                <div className="card bg-base-100 shadow-xl">
+                    <div className="card-body p-6">
+                        <h3 className="text-sm font-medium text-muted-foreground mb-2">Total Slips</h3>
+                        <div className="text-3xl font-bold">{totalSlips}</div>
+                    </div>
                 </div>
-                <div className="card">
-                    <h3 style={{ fontSize: '0.875rem', color: 'hsl(var(--muted-foreground))', marginBottom: '0.5rem' }}>Total Value</h3>
-                    <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>${totalValue.toFixed(2)}</div>
+                <div className="card bg-base-100 shadow-xl">
+                    <div className="card-body p-6">
+                        <h3 className="text-sm font-medium text-muted-foreground mb-2">Total Value</h3>
+                        <div className="text-3xl font-bold">${totalValue.toFixed(2)}</div>
+                    </div>
                 </div>
-                <div className="card">
-                    <h3 style={{ fontSize: '0.875rem', color: 'hsl(var(--muted-foreground))', marginBottom: '0.5rem' }}>Average Slip</h3>
-                    <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>${averageValue.toFixed(2)}</div>
+                <div className="card bg-base-100 shadow-xl">
+                    <div className="card-body p-6">
+                        <h3 className="text-sm font-medium text-muted-foreground mb-2">Average Slip</h3>
+                        <div className="text-3xl font-bold">${averageValue.toFixed(2)}</div>
+                    </div>
                 </div>
-                <div className="card">
-                    <h3 style={{ fontSize: '0.875rem', color: 'hsl(var(--muted-foreground))', marginBottom: '0.5rem' }}>Top Category</h3>
-                    <div style={{ fontSize: '2rem', fontWeight: 'bold', textTransform: 'capitalize' }}>{topTag}</div>
+                <div className="card bg-base-100 shadow-xl">
+                    <div className="card-body p-6">
+                        <h3 className="text-sm font-medium text-muted-foreground mb-2">Top Category</h3>
+                        <div className="text-3xl font-bold capitalize truncate" title={topTag}>{topTag}</div>
+                    </div>
                 </div>
             </div>
 
             <DashboardCharts categoryData={categoryData} timelineData={timelineData} />
 
             <section>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                    <h2 style={{ fontSize: '1.5rem', margin: 0 }}>Recent Uploads</h2>
-                    <a href="/dashboard/slips" style={{ color: 'hsl(var(--primary))', textDecoration: 'none', fontWeight: 500, fontSize: '0.875rem' }}>View All</a>
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold m-0">Recent Uploads</h2>
+                    <a href="/dashboard/slips" className="text-primary hover:underline font-medium text-sm">View All</a>
                 </div>
 
                 <SlipList slips={recentSlips} />

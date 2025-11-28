@@ -11,19 +11,19 @@ export default async function Home() {
   }
 
   return (
-    <div className="container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-      <h1 style={{ fontSize: '3rem', marginBottom: '1rem', background: 'linear-gradient(to right, hsl(var(--primary)), hsl(var(--ring)))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+    <div className="container min-h-screen flex flex-col items-center justify-center text-center px-4">
+      <h1 className="text-5xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-primary to-ring bg-clip-text text-transparent">
         Slips Vault
       </h1>
-      <p style={{ fontSize: '1.25rem', color: 'hsl(var(--muted-foreground))', maxWidth: '600px', marginBottom: '2rem' }}>
+      <p className="text-xl text-muted-foreground max-w-xl mb-8">
         Securely manage your slips, receipts, and important records with photo attachments.
       </p>
 
-      <div style={{ display: 'flex', gap: '1rem' }}>
-        <Link href="/login" className="btn btn-primary" style={{ fontSize: '1rem', padding: '0.75rem 1.5rem' }}>
+      <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+        <Link href="/login" className="btn btn-primary text-base px-8 py-3 w-full sm:w-auto">
           Log In
         </Link>
-        <Link href="/register" className="btn btn-secondary" style={{ fontSize: '1rem', padding: '0.75rem 1.5rem' }}>
+        <Link href="/register" className="btn btn-secondary text-base px-8 py-3 w-full sm:w-auto">
           Create Account
         </Link>
       </div>
