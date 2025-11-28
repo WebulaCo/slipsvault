@@ -143,7 +143,7 @@ export default function SlipList({ slips }: SlipListProps) {
                                 <td>
                                     <div className="flex flex-wrap gap-1">
                                         {slip.tags && slip.tags.map(tag => (
-                                            <span key={tag.id} className="badge badge-sm badge-ghost">
+                                            <span key={tag.id} className="bg-yellow-50 text-yellow-700 border border-yellow-100 px-2 py-0.5 rounded text-xs font-medium">
                                                 {tag.name}
                                             </span>
                                         ))}

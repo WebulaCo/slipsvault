@@ -11,7 +11,7 @@ export default function TopBar({ user }: TopBarProps) {
     return (
         <div className="fixed top-0 left-0 right-0 bg-white z-50 md:hidden px-4 py-3 flex justify-between items-center border-b border-gray-100">
             <div className="flex items-center gap-2">
-                <div className="bg-blue-500 text-white font-bold rounded px-2 py-1 text-sm">
+                <div className="bg-brand-teal text-white font-bold rounded px-2 py-1 text-sm">
                     SV
                 </div>
                 <span className="font-bold text-lg text-gray-900">SlipsVault</span>

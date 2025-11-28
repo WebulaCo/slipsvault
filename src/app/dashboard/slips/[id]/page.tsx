@@ -57,7 +57,7 @@ export default async function SlipDetailsPage({ params }: SlipDetailsPageProps) 
             </header>
 
             {/* Image Preview */}
-            <div className="bg-[#2f5d5a] rounded-xl p-8 mb-6 flex items-center justify-center min-h-[300px] shadow-md">
+            <div className="bg-brand-teal/10 rounded-xl p-8 mb-6 flex items-center justify-center min-h-[300px] shadow-md border border-brand-teal/20">
                 {slip.photos.length > 0 ? (
                     <img
                         src={slip.photos[0].url.startsWith('http') ? slip.photos[0].url : `/uploads/${slip.photos[0].url.split('/').pop()}`}
@@ -65,7 +65,7 @@ export default async function SlipDetailsPage({ params }: SlipDetailsPageProps) 
                         className="max-w-full max-h-[400px] object-contain shadow-lg rotate-1"
                     />
                 ) : (
-                    <div className="text-white/50">No image available</div>
+                    <div className="text-gray-400">No image available</div>
                 )}
             </div>
 
@@ -100,7 +100,7 @@ export default async function SlipDetailsPage({ params }: SlipDetailsPageProps) 
                         <span className="text-gray-500">Tags</span>
                         <div className="flex gap-2">
                             {slip.tags.map(tag => (
-                                <span key={tag.id} className="bg-[#fff8e1] text-[#f59e0b] px-2 py-1 rounded text-xs font-medium">
+                                <span key={tag.id} className="bg-yellow-50 text-yellow-700 border border-yellow-100 px-2 py-1 rounded text-xs font-medium">
                                     #{tag.name}
                                 </span>
                             ))}
@@ -117,7 +117,7 @@ export default async function SlipDetailsPage({ params }: SlipDetailsPageProps) 
             {/* Action Buttons */}
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 flex gap-4">
                 <DeleteSlipButton id={slip.id} />
-                <Link href={`/dashboard/edit/${slip.id}`} className="flex-1 btn btn-primary bg-brand-navy hover:bg-[#0d2e4d] border-none text-white h-12 rounded-xl text-base font-medium gap-2 shadow-lg">
+                <Link href={`/dashboard/edit/${slip.id}`} className="flex-1 btn btn-primary bg-brand-navy hover:bg-brand-navy-hover border-none text-white h-12 rounded-xl text-base font-medium gap-2 shadow-lg">
                     <Edit2 size={18} />
                     Edit Slip
                 </Link>

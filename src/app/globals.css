@@ -2,14 +2,19 @@
 @plugin "daisyui";
 
 @theme {
-  --color-brand-navy: #113f67;
-  --color-brand-teal: #38a3a5;
-  --color-bg-light: #f3f5f9;
+  --color-brand-navy: #0f3460;
+  --color-brand-navy-hover: #0d2e4d;
+  --color-brand-teal: #38b2ac;
+  --color-brand-teal-hover: #2a8c8e;
+  --color-brand-light: #f7f9fc;
+  --color-bg-light: #f7f9fc;
 }
 
 :root {
-  --foreground-rgb: 17, 63, 103; /* Navy text by default */
-  --background-start-rgb: 243, 245, 249; /* Light gray */
+  --foreground-rgb: 17, 63, 103;
+  /* Navy text by default */
+  --background-start-rgb: 243, 245, 249;
+  /* Light gray */
   --background-end-rgb: 243, 245, 249;
 }
 

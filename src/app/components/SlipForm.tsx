@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { analyzeSlip, deleteSlip, checkForDuplicate } from '@/app/actions'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { UploadCloud, X, MapPin } from 'lucide-react'
 
 interface SlipData {
     id?: string
@@ -29,14 +30,17 @@ interface SlipFormProps {
 
 export default function SlipForm({ initialData, action, submitLabel, theme = 'light' }: SlipFormProps) {
     const router = useRouter()
-    const searchParams = useSearchParams() // Correctly use useSearchParams hook
-    const q = searchParams.get('q') // Get 'q' from search params
+    const searchParams = useSearchParams()
+    const q = searchParams.get('q')
     const query = q || ''
 
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const [file, setFile] = useState<File | null>(null)
     const [photoUrl, setPhotoUrl] = useState<string>(initialData?.photoUrl || '')
+    const [preview, setPreview] = useState<string | null>(initialData?.photoUrl || null)
+    const [isDragging, setIsDragging] = useState(false)
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
     // Form State
     const [title, setTitle] = useState(initialData?.title || '')
@@ -54,9 +58,20 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
     const [pendingFormData, setPendingFormData] = useState<FormData | null>(null)
     const [error, setError] = useState('') // New state for error messages
 
-    const handleFileChange = async (selectedFile: File) => { // Renamed from handleFileSelect
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement> | File) => {
+        let selectedFile: File | undefined
+
+        if (e instanceof File) {
+            selectedFile = e
+        } else if (e.target.files?.[0]) {
+            selectedFile = e.target.files[0]
+        }
+
+        if (!selectedFile) return
+
         setFile(selectedFile)
-        setIsAnalyzing(true) // Use new state name
+        setPreview(URL.createObjectURL(selectedFile))
+        setIsAnalyzing(true)
 
         const formData = new FormData()
         formData.append('photo', selectedFile)
@@ -68,7 +83,7 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                 throw new Error(result.error || "Analysis failed");
             }
 
-            setPhotoUrl(result.url!) // url is present on success
+            setPhotoUrl(result.url!)
 
             const hasData = result.data && (result.data.place || result.data.date || result.data.amountAfterTax);
 
@@ -78,10 +93,8 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                     if (!title) setTitle(result.data!.place)
                 }
                 if (result.data!.date) setDate(result.data!.date)
-                // Only set amountAfterTax (now 'amount')
                 if (result.data!.amountAfterTax) setAmount(result.data!.amountAfterTax.toString())
                 if (result.data!.currency) setCurrency(result.data!.currency)
-                // if (result.data.summary) setSummary(result.data.summary) // Do not auto-populate summary
                 if (result.data!.tags && result.data!.tags.length > 0) {
                     setTags(result.data!.tags.join(', '))
                 }
@@ -91,7 +104,6 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
             }
         } catch (err: any) {
             console.error("Analysis failed", err)
-            // Show the actual error message for debugging
             setError(err.message || "Could not analyze photo. Please check your API key or enter details manually.")
         } finally {
             setIsAnalyzing(false)
@@ -216,7 +228,7 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
         setDragOver(false)
         const droppedFile = e.dataTransfer.files[0]
         if (droppedFile) {
-            handleFileChange(droppedFile)
+            handleFileSelect(droppedFile)
         }
     }
 
@@ -242,145 +254,161 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                 {/* Upload Area */}
                 <div className="form-control w-full">
                     <div
-                        className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${isDark ? 'border-gray-700 bg-[#252a3a]/50' : 'border-gray-200 bg-white'
-                            } ${dragOver ? 'border-brand-teal bg-brand-teal/10' : ''}`}
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
+                        className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${isDark ? 'border-gray-700 bg-[#252a3a]/50' : 'border-gray-200 bg-white hover:border-brand-teal hover:bg-brand-light'}`}
+                        onDragOver={(e) => {
+                            e.preventDefault()
+                            setIsDragging(true)
+                        }}
+                        onDragLeave={() => setIsDragging(false)}
                         onDrop={handleDrop}
                     >
                         <input
                             type="file"
-                            name="photo"
-                            accept="image/*"
-                            onChange={(e) => {
-                                const selectedFile = e.target.files?.[0];
-                                if (selectedFile) handleFileChange(selectedFile);
-                            }}
+                            ref={fileInputRef}
+                            onChange={handleFileSelect}
                             className="hidden"
-                            id="photo-upload"
+                            accept="image/*"
                         />
-                        <label htmlFor="photo-upload" className="cursor-pointer flex flex-col items-center gap-4">
-                            {photoUrl ? (
-                                <div className="relative flex items-center justify-center bg-gray-50 rounded-lg overflow-hidden p-2 w-full">
-                                    <img
-                                        src={photoUrl.startsWith('http') ? photoUrl : `/uploads/${photoUrl.split('/').pop()}`}
-                                        alt="Preview"
-                                        className="w-full max-h-[400px] object-contain shadow-sm rounded-md"
-                                    />
-                                </div>
-                            ) : (
-                                <div className="h-32 w-full flex items-center justify-center">
-                                    <div className={`w-16 h-16 rounded-full flex items-center justify-center ${isDark ? 'bg-[#2f3545]' : 'bg-brand-teal/10'}`}>
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isDark ? 'text-blue-500' : 'text-brand-teal'}>
-                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                            <polyline points="17 8 12 3 7 8" />
-                                            <line x1="12" x2="12" y1="3" y2="15" />
-                                        </svg>
-                                    </div>
-                                </div>
-                            )}
-                            <div className="text-center">
-                                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                    Tap to upload a slip from your gallery or camera
-                                </p>
+
+                        {preview ? (
+                            <div className="relative inline-block">
+                                <img src={preview} alt="Preview" className="max-h-64 rounded-lg shadow-md" />
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        setFile(null)
+                                        setPreview(null)
+                                    }}
+                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
+                                >
+                                    <X size={16} />
+                                </button>
                             </div>
-                            <span className="w-full btn btn-primary bg-brand-teal hover:bg-[#2a8c8e] border-none text-white normal-case text-base font-medium h-12 rounded-xl shadow-md">
-                                {isAnalyzing ? (
-                                    <>
-                                        <span className="loading loading-spinner loading-xs"></span>
-                                        Analyzing...
-                                    </>
-                                ) : (
-                                    <>
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                                            <circle cx="12" cy="13" r="4" />
-                                        </svg>
-                                        {photoUrl ? 'Change Photo' : 'Upload Slip'}
-                                    </>
-                                )}
-                            </span>
-                        </label>
+                        ) : (
+                            <div className="flex flex-col items-center gap-4">
+                                <div className={`w-16 h-16 rounded-full flex items-center justify-center ${isDark ? 'bg-[#2f3545]' : 'bg-brand-teal/10'}`}>
+                                    <UploadCloud size={32} className={isDark ? 'text-gray-400' : 'text-brand-teal'} />
+                                </div>
+                                <div>
+                                    <p className={`text-lg font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                        Drag & drop your slip here
+                                    </p>
+                                    <p className="text-sm text-gray-500 mt-1">or click to browse</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="w-full btn btn-primary bg-brand-teal hover:bg-brand-teal-hover border-none text-white normal-case text-base font-medium h-12 rounded-xl shadow-md"
+                                >
+                                    Select File
+                                </button>
+                            </div>
+                        )}
                     </div>
-                </div>
 
-                <div className={`flex items-center gap-4 my-8 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
-                    <div className="h-px bg-current flex-1 opacity-20"></div>
-                    <span className="text-xs font-medium">OR ENTER MANUALLY</span>
-                    <div className="h-px bg-current flex-1 opacity-20"></div>
-                </div>
-
-                <div className="space-y-4">
+                    {/* Title Input */}
                     <div className="form-control w-full">
                         <label className="label">
-                            <span className={labelClass}>Title / Merchant</span>
+                            <span className={`label-text font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Title / Merchant</span>
                         </label>
                         <input
                             type="text"
-                            name="title"
+                            placeholder="e.g. Woolworths Groceries"
+                            className={inputClass}
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            className={inputClass}
-                            placeholder="e.g. Cafe"
                             required
                         />
                     </div>
 
-                    <div className="form-control w-full">
-                        <label className="label">
-                            <span className={labelClass}>Amount</span>
-                        </label>
-                        <div className="relative">
-                            <span className={`absolute left-3 top-1/2 -translate-y-1/2 font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                                $
-                            </span>
+                    <div className="grid grid-cols-2 gap-4">
+                        {/* Amount Input */}
+                        <div className="form-control w-full">
+                            <label className="label">
+                                <span className={`label-text font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Amount</span>
+                            </label>
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    className={`${inputClass} pl-8`}
+                                    value={amount}
+                                    onChange={(e) => setAmount(e.target.value)}
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        {/* Date Input */}
+                        <div className="form-control w-full">
+                            <label className="label">
+                                <span className={`label-text font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Date</span>
+                            </label>
                             <input
-                                type="number"
-                                name="amountAfterTax"
-                                value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
-                                step="0.01"
-                                className={`${inputClass} pl-8`}
-                                placeholder="0.00"
+                                type="date"
+                                className={inputClass}
+                                value={date}
+                                onChange={(e) => setDate(e.target.value)}
+                                required
                             />
                         </div>
                     </div>
 
+                    {/* Place Input */}
                     <div className="form-control w-full">
                         <label className="label">
-                            <span className={labelClass}>Category</span>
+                            <span className={`label-text font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Location / Place</span>
                         </label>
-                        <select className={`select select-bordered w-full ${isDark ? 'bg-[#252a3a] border-gray-700 text-white' : 'bg-white focus:border-brand-teal focus:ring-1 focus:ring-brand-teal'}`}>
-                            <option>Select a category</option>
-                            <option>Fuel</option>
-                            <option>Groceries</option>
-                            <option>Travel</option>
-                            <option>Utilities</option>
+                        <div className="relative">
+                            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                            <input
+                                type="text"
+                                placeholder="e.g. Cape Town"
+                                className={`${inputClass} pl-10`}
+                                value={place}
+                                onChange={(e) => setPlace(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Category (Tag) Input */}
+                    <div className="form-control w-full">
+                        <label className="label">
+                            <span className={`label-text font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Category</span>
+                        </label>
+                        <select
+                            className={`select select-bordered w-full ${isDark ? 'bg-[#252a3a] border-gray-700 text-white' : 'bg-white focus:border-brand-teal focus:ring-1 focus:ring-brand-teal'}`}
+                            value={tags}
+                            onChange={(e) => setTags(e.target.value)}
+                        >
+                            <option value="Groceries">Groceries</option>
+                            <option value="Transport">Transport</option>
+                            <option value="Utilities">Utilities</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Dining">Dining</option>
+                            <option value="Health">Health</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Other">Other</option>
                         </select>
                     </div>
 
-                    <div className="form-control w-full">
-                        <label className="label">
-                            <span className={labelClass}>Date</span>
-                        </label>
-                        <input
-                            type="date"
-                            name="date"
-                            value={date}
-                            onChange={(e) => setDate(e.target.value)}
-                            className={inputClass}
-                        />
-                    </div>
-
-                    {/* Hidden fields for compatibility or future use */}
-                    <input type="hidden" name="place" value={place} />
-                    <input type="hidden" name="tags" value={tags} />
-                </div>
-
-                <div className="pt-4">
-                    <button type="submit" className="w-full btn btn-primary bg-brand-navy hover:bg-[#0d2e4d] border-none text-white h-12 rounded-xl text-lg font-medium shadow-lg" disabled={isSubmitting || isAnalyzing}>
-                        {isSubmitting && <span className="loading loading-spinner loading-sm"></span>}
-                        {submitLabel}
+                    {/* Submit Button */}
+                    <button
+                        type="submit"
+                        className="w-full btn btn-primary bg-brand-navy hover:bg-brand-navy-hover border-none text-white h-12 rounded-xl text-lg font-medium shadow-lg"
+                        disabled={isSubmitting || isAnalyzing}
+                    >
+                        {isSubmitting ? (
+                            <>
+                                <span className="loading loading-spinner"></span>
+                                Saving...
+                            </>
+                        ) : (
+                            'Save Slip'
+                        )}
                     </button>
                 </div>
             </form>
