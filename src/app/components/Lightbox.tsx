@@ -58,7 +58,7 @@ export default function Lightbox({ isOpen, imageUrl, onClose }: LightboxProps) {
                 &times;
             </button>
             <img
-                src={`/uploads/${imageUrl.split('/').pop()}`}
+                src={imageUrl.startsWith('http') ? imageUrl : `/uploads/${imageUrl.split('/').pop()}`}
                 alt="Full size"
                 style={{
                     maxWidth: '100%',

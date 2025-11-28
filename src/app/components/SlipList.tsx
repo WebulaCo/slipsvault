@@ -64,7 +64,10 @@ export default function SlipList({ slips }: SlipListProps) {
                                     {slip.photos.length > 0 && (
                                         <div className="avatar">
                                             <div className="w-8 h-8 rounded bg-base-200 cursor-pointer hover:ring-2 hover:ring-primary transition-all" onClick={() => openLightbox(slip.photos[0].url)}>
-                                                <img src={`/uploads/${slip.photos[0].url.split('/').pop()}`} alt={slip.title} />
+                                                <img
+                                                    src={slip.photos[0].url.startsWith('http') ? slip.photos[0].url : `/uploads/${slip.photos[0].url.split('/').pop()}`}
+                                                    alt={slip.title}
+                                                />
                                             </div>
                                         </div>
                                     )}
