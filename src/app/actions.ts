@@ -127,6 +127,7 @@ export async function registerUser(formData: FormData) {
     const name = formData.get('name') as string
     const email = formData.get('email') as string
     const password = formData.get('password') as string
+    const companyName = formData.get('companyName') as string
 
     if (!email || !password) {
         return { success: false, error: "Email and password are required" }
@@ -148,6 +149,7 @@ export async function registerUser(formData: FormData) {
                 name,
                 email,
                 password: hashedPassword,
+                companyName,
                 role: 'USER'
             }
         })

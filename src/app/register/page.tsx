@@ -33,72 +33,83 @@ export default function RegisterPage() {
     }
 
     return (
-        <div className="container" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div className="card" style={{ width: '100%', maxWidth: '400px' }}>
-                <h1 style={{ textAlign: 'center', marginBottom: '2rem', fontSize: '1.75rem' }}>Create Account</h1>
+        <div className="min-h-screen flex items-center justify-center bg-brand-light p-4">
+            <div className="card w-full max-w-md bg-white shadow-xl border border-gray-100">
+                <div className="card-body">
+                    <h1 className="text-2xl font-bold text-center mb-6 text-brand-navy">Create Account</h1>
 
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {error && (
-                        <div style={{
-                            padding: '0.75rem',
-                            backgroundColor: 'hsl(var(--destructive) / 0.1)',
-                            color: 'hsl(var(--destructive))',
-                            borderRadius: 'var(--radius)',
-                            fontSize: '0.875rem'
-                        }}>
-                            {error}
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        {error && (
+                            <div className="alert alert-error text-sm py-2 rounded-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                <span>{error}</span>
+                            </div>
+                        )}
+
+                        <div className="form-control w-full">
+                            <label className="label">
+                                <span className="label-text font-medium text-gray-700">Name</span>
+                            </label>
+                            <input
+                                name="name"
+                                type="text"
+                                className="input input-bordered w-full bg-white focus:border-brand-teal focus:ring-1 focus:ring-brand-teal"
+                                required
+                                placeholder="Your name"
+                            />
                         </div>
-                    )}
 
-                    <div>
-                        <label htmlFor="name" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Name</label>
-                        <input
-                            id="name"
-                            name="name"
-                            type="text"
-                            className="input"
-                            required
-                            placeholder="Your name"
-                        />
-                    </div>
+                        <div className="form-control w-full">
+                            <label className="label">
+                                <span className="label-text font-medium text-gray-700">Company Name</span>
+                            </label>
+                            <input
+                                name="companyName"
+                                type="text"
+                                className="input input-bordered w-full bg-white focus:border-brand-teal focus:ring-1 focus:ring-brand-teal"
+                                placeholder="Your company (optional)"
+                            />
+                        </div>
 
-                    <div>
-                        <label htmlFor="email" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Email</label>
-                        <input
-                            id="email"
-                            name="email"
-                            type="email"
-                            className="input"
-                            required
-                            placeholder="Enter your email"
-                        />
-                    </div>
+                        <div className="form-control w-full">
+                            <label className="label">
+                                <span className="label-text font-medium text-gray-700">Email</span>
+                            </label>
+                            <input
+                                name="email"
+                                type="email"
+                                className="input input-bordered w-full bg-white focus:border-brand-teal focus:ring-1 focus:ring-brand-teal"
+                                required
+                                placeholder="Enter your email"
+                            />
+                        </div>
 
-                    <div>
-                        <label htmlFor="password" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Password</label>
-                        <input
-                            id="password"
-                            name="password"
-                            type="password"
-                            className="input"
-                            required
-                            placeholder="Create a password"
-                        />
-                    </div>
+                        <div className="form-control w-full">
+                            <label className="label">
+                                <span className="label-text font-medium text-gray-700">Password</span>
+                            </label>
+                            <input
+                                name="password"
+                                type="password"
+                                className="input input-bordered w-full bg-white focus:border-brand-teal focus:ring-1 focus:ring-brand-teal"
+                                required
+                                placeholder="Create a password"
+                            />
+                        </div>
 
-                    <button
-                        type="submit"
-                        className="btn btn-primary"
-                        disabled={loading}
-                        style={{ marginTop: '1rem' }}
-                    >
-                        {loading ? 'Creating Account...' : 'Sign Up'}
-                    </button>
+                        <button
+                            type="submit"
+                            className="btn btn-primary w-full bg-brand-navy hover:bg-[#0d2e4d] border-none text-white mt-4 h-12 text-lg"
+                            disabled={loading}
+                        >
+                            {loading ? <span className="loading loading-spinner loading-sm"></span> : 'Sign Up'}
+                        </button>
 
-                    <p style={{ textAlign: 'center', fontSize: '0.875rem', marginTop: '1rem', color: 'hsl(var(--muted-foreground))' }}>
-                        Already have an account? <Link href="/login" style={{ color: 'hsl(var(--primary))' }}>Sign in</Link>
-                    </p>
-                </form>
+                        <p className="text-center text-sm text-gray-500 mt-4">
+                            Already have an account? <Link href="/login" className="text-brand-teal hover:underline font-medium">Sign in</Link>
+                        </p>
+                    </form>
+                </div>
             </div>
         </div>
     )

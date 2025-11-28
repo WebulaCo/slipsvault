@@ -73,7 +73,10 @@ export default async function DashboardPage() {
     return (
         <div>
             <header className="mb-6">
-                <h1 className="text-xl font-bold mb-1">Welcome back, {session.user.name || 'User'}!</h1>
+                <h1 className="text-xl font-bold mb-1">
+                    Welcome back, {session.user.name || 'User'}
+                    {session.user.companyName && <span className="text-brand-teal"> from {session.user.companyName}</span>}!
+                </h1>
                 <p className="text-gray-500 text-sm">Here's an overview of your recent activity.</p>
             </header>
 
