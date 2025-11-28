@@ -18,7 +18,7 @@ export default function MobileNav() {
         // Since we don't have a tags page, let's point to slips with a hash or similar, or just /dashboard/slips for now.
         // Actually, the sidebar lists specific tags. A "Tags" tab might imply a list of tags. 
         // Let's create a placeholder link for now.
-        { name: 'Tags', href: '/dashboard/tags', icon: Hash },
+        { name: 'Tags', href: '/dashboard/search', icon: Hash },
     ]
 
     return (

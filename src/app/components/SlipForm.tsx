@@ -4,7 +4,7 @@ import { useState, useRef } from 'react'
 import { analyzeSlip, deleteSlip, checkForDuplicate } from '@/app/actions'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { UploadCloud, X, MapPin } from 'lucide-react'
+import { UploadCloud, X, MapPin, Hash } from 'lucide-react'
 
 interface SlipData {
     id?: string
@@ -378,25 +378,25 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                         </div>
                     </div>
 
-                    {/* Category (Tag) Input */}
+                    {/* Tags Input */}
                     <div className="form-control w-full">
                         <label className="label">
-                            <span className={`label-text font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Category</span>
+                            <span className={`label-text font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Tags</span>
                         </label>
-                        <select
-                            className={`select select-bordered w-full ${isDark ? 'bg-[#252a3a] border-gray-700 text-white' : 'bg-white focus:border-brand-teal focus:ring-1 focus:ring-brand-teal'}`}
-                            value={tags}
-                            onChange={(e) => setTags(e.target.value)}
-                        >
-                            <option value="Groceries">Groceries</option>
-                            <option value="Transport">Transport</option>
-                            <option value="Utilities">Utilities</option>
-                            <option value="Entertainment">Entertainment</option>
-                            <option value="Dining">Dining</option>
-                            <option value="Health">Health</option>
-                            <option value="Shopping">Shopping</option>
-                            <option value="Other">Other</option>
-                        </select>
+                        <div className="relative">
+                            <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                            <input
+                                type="text"
+                                name="tags"
+                                placeholder="e.g. groceries, travel, dining"
+                                className={`${inputClass} pl-10`}
+                                value={tags}
+                                onChange={(e) => setTags(e.target.value)}
+                            />
+                        </div>
+                        <label className="label">
+                            <span className="label-text-alt text-gray-500">Separate multiple tags with commas</span>
+                        </label>
                     </div>
 
                     {/* Submit Button */}
