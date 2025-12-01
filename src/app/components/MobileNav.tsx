@@ -11,13 +11,6 @@ export default function MobileNav() {
     const navItems = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
         { name: 'All Slips', href: '/dashboard/slips', icon: Receipt },
-        // We can link to a tags page or just filter by tags. For now, let's keep it consistent with sidebar.
-        // The sidebar links to /dashboard/slips?tag=... but here we might want a general tags view.
-        // Let's assume there isn't a dedicated tags page yet, so maybe we just link to slips for now or omit if not ready.
-        // The design shows "Tags", so let's point to a tags management page or similar. 
-        // Since we don't have a tags page, let's point to slips with a hash or similar, or just /dashboard/slips for now.
-        // Actually, the sidebar lists specific tags. A "Tags" tab might imply a list of tags. 
-        // Let's create a placeholder link for now.
         { name: 'Tags', href: '/dashboard/search', icon: Hash },
     ]
 

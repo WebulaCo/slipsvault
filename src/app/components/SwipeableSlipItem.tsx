@@ -35,7 +35,6 @@ export default function SwipeableSlipItem({ slip, openLightbox }: SwipeableSlipI
         const currentTouchX = e.touches[0].clientX
         const diff = currentTouchX - startX
 
-        // Only allow horizontal scrolling if it's significant
         if (Math.abs(diff) > 10) {
             setIsSwiping(true)
             setCurrentX(diff)
@@ -46,11 +45,9 @@ export default function SwipeableSlipItem({ slip, openLightbox }: SwipeableSlipI
         if (startX === null) return
 
         if (currentX > SWIPE_THRESHOLD) {
-            // Swiped Right -> Edit
             router.push(`/dashboard/edit/${slip.id}`)
             setCurrentX(0)
         } else if (currentX < -SWIPE_THRESHOLD) {
-            // Swiped Left -> Delete
             if (confirm('Are you sure you want to delete this slip?')) {
                 try {
                     await deleteSlip(slip.id)
@@ -62,7 +59,6 @@ export default function SwipeableSlipItem({ slip, openLightbox }: SwipeableSlipI
             }
             setCurrentX(0)
         } else {
-            // Reset
             setCurrentX(0)
         }
 
@@ -71,14 +67,13 @@ export default function SwipeableSlipItem({ slip, openLightbox }: SwipeableSlipI
     }
 
     const getBackgroundStyle = () => {
-        if (currentX > 0) return 'bg-brand-teal' // Right swipe (Edit)
-        if (currentX < 0) return 'bg-red-500'   // Left swipe (Delete)
+        if (currentX > 0) return 'bg-brand-teal'
+        if (currentX < 0) return 'bg-red-500'
         return 'bg-white'
     }
 
     return (
         <div className={`relative overflow-hidden border-b border-gray-100 ${getBackgroundStyle()}`}>
-            {/* Background Actions */}
             <div className={`absolute inset-y-0 left-0 w-full flex items-center px-4 text-white font-bold transition-opacity duration-200 ${currentX > 0 ? 'opacity-100' : 'opacity-0'}`}>
                 <Edit size={24} className="mr-2" /> Edit
             </div>
@@ -86,7 +81,6 @@ export default function SwipeableSlipItem({ slip, openLightbox }: SwipeableSlipI
                 Delete <Trash2 size={24} className="ml-2" />
             </div>
 
-            {/* Foreground Content */}
             <div
                 ref={itemRef}
                 className="bg-white p-4 flex items-center gap-4 relative z-10 transition-transform duration-100 ease-out"
@@ -98,7 +92,6 @@ export default function SwipeableSlipItem({ slip, openLightbox }: SwipeableSlipI
                     if (!isSwiping) router.push(`/dashboard/slips/${slip.id}`)
                 }}
             >
-                {/* Thumbnail */}
                 <div className="flex-shrink-0" onClick={(e) => {
                     e.stopPropagation();
                     if (!isSwiping && slip.photos.length > 0) openLightbox(slip.photos[0].url)
@@ -118,7 +111,6 @@ export default function SwipeableSlipItem({ slip, openLightbox }: SwipeableSlipI
                     )}
                 </div>
 
-                {/* Middle: Title & Date */}
                 <div className="flex-1 min-w-0 pointer-events-none">
                     <h3 className="font-semibold text-gray-900 truncate text-base">{slip.title}</h3>
                     <div className="text-sm text-gray-500 mt-0.5">
@@ -126,7 +118,6 @@ export default function SwipeableSlipItem({ slip, openLightbox }: SwipeableSlipI
                     </div>
                 </div>
 
-                {/* Right: Amount & Tag */}
                 <div className="text-right flex-shrink-0 pointer-events-none">
                     <div className="font-bold text-gray-900 text-base">
                         {slip.amountAfterTax?.toFixed(2)}

@@ -12,27 +12,20 @@ import { hash } from "bcryptjs"
 import { analyzeImageWithGemini } from "@/lib/ocr"
 
 export async function analyzeSlip(formData: FormData) {
-    console.log("analyzeSlip: Started");
     try {
         const session = await getServerSession(authOptions)
         if (!session) {
-            console.error("analyzeSlip: Unauthorized");
             return { success: false, error: "Unauthorized" };
         }
 
         const file = formData.get('photo') as File | null
         if (!file || file.size === 0) {
-            console.error("analyzeSlip: No file provided");
             return { success: false, error: "No file provided" };
         }
-        console.log(`analyzeSlip: File received. Name: ${file.name}, Size: ${file.size}, Type: ${file.type}`);
 
         const storage = getStorageService();
-        console.log("analyzeSlip: Calling storage.saveFile");
         const url = await storage.saveFile(file);
-        console.log(`analyzeSlip: storage.saveFile returned: ${url}`);
 
-        // Convert file to buffer for OCR
         const arrayBuffer = await file.arrayBuffer()
         const buffer = Buffer.from(arrayBuffer)
 
@@ -40,7 +33,6 @@ export async function analyzeSlip(formData: FormData) {
 
         return { success: true, url, data }
     } catch (error: any) {
-        console.error("analyzeSlip: Error occurred:", error);
         return { success: false, error: error.message || "An unexpected error occurred" };
     }
 }
@@ -53,9 +45,8 @@ export async function createSlip(formData: FormData) {
     }
 
     const title = formData.get('title') as string
-    const content = formData.get('content') as string // This is now the summary/notes
+    const content = formData.get('content') as string
 
-    // New fields
     const place = formData.get('place') as string
     const dateStr = formData.get('date') as string
     const currency = formData.get('currency') as string
@@ -64,15 +55,12 @@ export async function createSlip(formData: FormData) {
     const taxAmount = formData.get('taxAmount') ? parseFloat(formData.get('taxAmount') as string) : null
     const amountAfterTax = formData.get('amountAfterTax') ? parseFloat(formData.get('amountAfterTax') as string) : null
 
-    // Handle file: could be a new upload OR a URL from the analysis step
     const file = formData.get('photo') as File | null
-    // const existingUrl = formData.get('photoUrl') as string // Removed as per instruction
 
-    // Tags handling
     const tagsString = formData.get('tags') as string
     const tags = tagsString ? tagsString.split(',').map(t => t.trim()).filter(t => t.length > 0) : []
 
-    let photoUrl: string | undefined = undefined // Changed initialization as per instruction
+    let photoUrl: string | undefined = undefined
 
     if (file && file.size > 0) {
         const storage = getStorageService()
@@ -83,7 +71,6 @@ export async function createSlip(formData: FormData) {
         throw new Error("Title is required")
     }
 
-    // Handle Tags: Connect or Create
     const tagConnectOrCreate = tags.map(tagName => ({
         where: {
             name_userId: {
@@ -262,15 +249,13 @@ export async function updateSlip(formData: FormData) {
             taxAmount,
             amountAfterTax,
             currency,
-            // Handle photo update if URL changed or new photo added
             photos: photoUrl && (!existingSlip.photos[0] || existingSlip.photos[0].url !== photoUrl) ? {
-                deleteMany: {}, // Optional: remove old photo relation
+                deleteMany: {},
                 create: { url: photoUrl }
             } : undefined,
-            // Update tags: set allows us to replace existing tags with the new list
             tags: {
-                set: [], // Disconnect all existing
-                connectOrCreate: tagConnectOrCreate // Connect new ones
+                set: [],
+                connectOrCreate: tagConnectOrCreate
             }
         }
     })
@@ -305,8 +290,6 @@ export async function checkForDuplicate(data: { place: string, date: string, amo
 
     const { place, date, amount } = data
 
-    // Simple fuzzy match or exact match logic
-    // Here we check for exact date and amount, and contains place name
     const duplicates = await prisma.slip.findMany({
         where: {
             userId: session.user.id,
@@ -337,15 +320,12 @@ export async function exportSlips() {
         include: { tags: true }
     })
 
-    // CSV Header
     const header = ['Date', 'Title', 'Place', 'Amount', 'Currency', 'Tags', 'Summary'].join(',')
 
-    // CSV Rows
     const rows = slips.map((slip: any) => {
         const date = slip.date ? slip.date.toISOString().split('T')[0] : ''
         const tags = slip.tags.map((t: any) => t.name).join(';')
 
-        // Escape fields that might contain commas
         const escape = (field: string | null | undefined) => {
             if (!field) return ''
             return `"${field.replace(/"/g, '""')}"`

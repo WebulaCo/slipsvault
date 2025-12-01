@@ -46,17 +46,16 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
     const [title, setTitle] = useState(initialData?.title || '')
     const [place, setPlace] = useState(initialData?.place || '')
     const [date, setDate] = useState(initialData?.date ? new Date(initialData.date).toISOString().split('T')[0] : '')
-    // Removed amountBeforeTax and taxAmount states
-    const [amount, setAmount] = useState(initialData?.amountAfterTax?.toString() || '') // Renamed from amountAfterTax
+    const [amount, setAmount] = useState(initialData?.amountAfterTax?.toString() || '')
     const [currency, setCurrency] = useState(initialData?.currency || '')
-    const [summary, setSummary] = useState(initialData?.summary || '') // Removed initialData?.content
-    const [tags, setTags] = useState<string>(initialData?.tags?.map((t: { name: string }) => t.name).join(', ') || '') // New state for tags
+    const [summary, setSummary] = useState(initialData?.summary || '')
+    const [tags, setTags] = useState<string>(initialData?.tags?.map((t: { name: string }) => t.name).join(', ') || '')
 
     // Duplicate State
-    const [duplicateSlip, setDuplicateSlip] = useState<{ id: string, title: string, date: Date, amountAfterTax: number | null } | null>(null) // Renamed from duplicate
+    const [duplicateSlip, setDuplicateSlip] = useState<{ id: string, title: string, date: Date, amountAfterTax: number | null } | null>(null)
     const [showDuplicateModal, setShowDuplicateModal] = useState(false)
     const [pendingFormData, setPendingFormData] = useState<FormData | null>(null)
-    const [error, setError] = useState('') // New state for error messages
+    const [error, setError] = useState('')
 
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement> | File) => {
         let selectedFile: File | undefined
@@ -112,8 +111,8 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
-        setIsSubmitting(true) // Use new state name
-        setError('') // Clear previous errors
+        setIsSubmitting(true)
+        setError('')
 
         const formData = new FormData(e.currentTarget)
 
@@ -126,7 +125,6 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
         // Append tags manually as they are controlled state
         formData.set('tags', tags)
 
-        // If editing, just submit directly (duplicate check usually for new slips, but could be added if needed)
         if (initialData) {
             try {
                 await action(formData)
@@ -143,16 +141,16 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
         const checkData = {
             place: place,
             date: date,
-            amount: parseFloat(amount) // Use 'amount' state
+            amount: parseFloat(amount)
         }
 
         if (checkData.place && checkData.date && !isNaN(checkData.amount)) {
             const duplicate = await checkForDuplicate(checkData)
             if (duplicate) {
-                setDuplicateSlip(duplicate as any) // Cast to any to avoid stale type errors
+                setDuplicateSlip(duplicate as any)
                 setPendingFormData(formData)
                 setShowDuplicateModal(true)
-                setIsSubmitting(false) // Use new state name
+                setIsSubmitting(false)
                 return
             }
         }
@@ -182,11 +180,9 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                 }
             }
         } else if (decision === 'view') {
-            // Redirect to the existing slip
-            router.push(`/dashboard/edit/${duplicateSlip?.id}`) // Use router.push
+            router.push(`/dashboard/edit/${duplicateSlip?.id}`)
         } else if (decision === 'update') {
-            // Redirect to edit page of existing slip (user can then update it)
-            router.push(`/dashboard/edit/${duplicateSlip?.id}`) // Use router.push
+            router.push(`/dashboard/edit/${duplicateSlip?.id}`)
         }
     }
 
@@ -417,7 +413,6 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                 </div>
             </form>
 
-            {/* Modals remain mostly the same, just basic styling */}
             {showDuplicateModal && (
                 <div className="modal modal-open">
                     <div className="modal-box text-gray-900">

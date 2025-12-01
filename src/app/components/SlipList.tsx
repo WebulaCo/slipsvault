@@ -44,7 +44,6 @@ export default function SlipList({ slips }: SlipListProps) {
         }
     }
 
-    // Keep SlipMenu for Desktop view
     const SlipMenu = ({ slip }: { slip: SlipWithRelations }) => (
         <div className="dropdown dropdown-end">
             <div tabIndex={0} role="button" className="btn btn-ghost btn-circle btn-sm">
@@ -86,7 +85,6 @@ export default function SlipList({ slips }: SlipListProps) {
 
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-            {/* Mobile View (Custom Swipeable List) */}
             <div className="md:hidden">
                 {slips.map((slip) => (
                     <SwipeableSlipItem
@@ -97,7 +95,6 @@ export default function SlipList({ slips }: SlipListProps) {
                 ))}
             </div>
 
-            {/* Desktop View (Table) */}
             <div className="hidden md:block overflow-x-auto">
                 <table className="table table-zebra w-full">
                     <thead>
@@ -158,7 +155,6 @@ export default function SlipList({ slips }: SlipListProps) {
                 </table>
             </div>
 
-            {/* Lightbox */}
             {lightboxOpen && selectedImage && (
                 <div className="modal modal-open" onClick={() => setLightboxOpen(false)}>
                     <div className="modal-box max-w-5xl p-0 bg-transparent shadow-none overflow-hidden flex items-center justify-center relative">

@@ -24,7 +24,6 @@ export default function Sidebar({ user, tags }: SidebarProps) {
 
     return (
         <>
-            {/* Mobile Hamburger Button */}
             <button
                 className="btn btn-square btn-ghost fixed top-2 left-2 z-50 md:hidden"
                 onClick={() => setIsOpen(!isOpen)}
@@ -32,7 +31,6 @@ export default function Sidebar({ user, tags }: SidebarProps) {
                 <Menu size={24} />
             </button>
 
-            {/* Overlay for mobile */}
             {isOpen && (
                 <div
                     className="fixed inset-0 bg-black/50 z-40 md:hidden"
@@ -52,7 +50,6 @@ export default function Sidebar({ user, tags }: SidebarProps) {
                         SV
                     </div>
                     <span className="text-xl font-bold">SlipsVault</span>
-                    {/* Close button for mobile */}
                     <button
                         className="btn btn-square btn-ghost btn-sm ml-auto md:hidden"
                         onClick={() => setIsOpen(false)}
