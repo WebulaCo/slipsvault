@@ -236,7 +236,7 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
 
     return (
         <>
-            <form onSubmit={handleSubmit} className="space-y-6" encType="multipart/form-data">
+            <form onSubmit={handleSubmit} className="space-y-8" encType="multipart/form-data">
                 {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
                 {initialData?.photoUrl && <input type="hidden" name="photoUrl" value={initialData.photoUrl} />}
 
@@ -319,7 +319,7 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Amount Input */}
                         <div className="form-control w-full">
                             <label className="label">
