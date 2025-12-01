@@ -14,6 +14,17 @@ datasource db {
 enum Role {
   USER
   ADMIN
+  COMPANY_ADMIN
+  CONTRIBUTOR
+  ACCOUNTANT
+}
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  users     User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model User {
@@ -23,6 +34,8 @@ model User {
   name      String?
   companyName String?
   role      Role     @default(USER)
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   slips     Slip[]

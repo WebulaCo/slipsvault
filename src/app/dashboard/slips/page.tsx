@@ -27,9 +27,11 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
     const { q, start, end, category } = await searchParams
     const query = q || ''
 
-    const whereClause: any = {
-        userId: session.user.id
-    }
+    const isCompanyView = (session.user.role === 'COMPANY_ADMIN' || session.user.role === 'ACCOUNTANT' || session.user.role === 'ADMIN') && session.user.companyId
+
+    const whereClause: any = isCompanyView
+        ? { user: { companyId: session.user.companyId } }
+        : { userId: session.user.id }
 
     if (query) {
         whereClause.OR = [

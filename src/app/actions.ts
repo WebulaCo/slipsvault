@@ -44,6 +44,10 @@ export async function createSlip(formData: FormData) {
         throw new Error("Unauthorized")
     }
 
+    if (session.user.role === 'ACCOUNTANT') {
+        throw new Error("Unauthorized: Accountants cannot create slips")
+    }
+
     const title = formData.get('title') as string
     const content = formData.get('content') as string
 
@@ -136,13 +140,25 @@ export async function registerUser(formData: FormData) {
 
         const hashedPassword = await hash(password, 12)
 
+        let companyId = null;
+        let role = 'USER';
+
+        if (companyName) {
+            const company = await prisma.company.create({
+                data: { name: companyName }
+            })
+            companyId = company.id
+            role = 'COMPANY_ADMIN'
+        }
+
         await prisma.user.create({
             data: {
                 name,
                 email,
                 password: hashedPassword,
                 companyName,
-                role: 'USER'
+                companyId,
+                role: role as any
             }
         })
 
@@ -184,6 +200,10 @@ export async function updateSlip(formData: FormData) {
     const session = await getServerSession(authOptions)
     if (!session) throw new Error("Unauthorized")
 
+    if (session.user.role === 'ACCOUNTANT') {
+        throw new Error("Unauthorized: Accountants cannot update slips")
+    }
+
     const id = formData.get('id') as string
     if (!id) throw new Error("Slip ID is required")
 
@@ -214,14 +234,22 @@ export async function updateSlip(formData: FormData) {
 
     if (!title) throw new Error("Title is required")
 
-    // Verify ownership
+    // Verify ownership or admin access
     const existingSlip = await prisma.slip.findUnique({
         where: { id },
-        include: { photos: true, tags: true }
+        include: { photos: true, tags: true, user: true }
     })
 
-    if (!existingSlip || existingSlip.userId !== session.user.id) {
-        throw new Error("Slip not found or unauthorized")
+    if (!existingSlip) {
+        throw new Error("Slip not found")
+    }
+
+    const isCompanyAdmin = (session.user.role === 'COMPANY_ADMIN' || session.user.role === 'ADMIN') && session.user.companyId
+    const isOwner = existingSlip.userId === session.user.id
+    const isSameCompany = existingSlip.user.companyId === session.user.companyId
+
+    if (!isOwner && !(isCompanyAdmin && isSameCompany)) {
+        throw new Error("Unauthorized")
     }
 
     // Handle Tags: Connect or Create
@@ -268,12 +296,25 @@ export async function deleteSlip(id: string) {
     const session = await getServerSession(authOptions)
     if (!session) throw new Error("Unauthorized")
 
+    if (session.user.role === 'ACCOUNTANT') {
+        throw new Error("Unauthorized: Accountants cannot delete slips")
+    }
+
     const slip = await prisma.slip.findUnique({
-        where: { id }
+        where: { id },
+        include: { user: true }
     })
 
-    if (!slip || slip.userId !== session.user.id) {
-        throw new Error("Slip not found or unauthorized")
+    if (!slip) {
+        throw new Error("Slip not found")
+    }
+
+    const isCompanyAdmin = (session.user.role === 'COMPANY_ADMIN' || session.user.role === 'ADMIN') && session.user.companyId
+    const isOwner = slip.userId === session.user.id
+    const isSameCompany = slip.user.companyId === session.user.companyId
+
+    if (!isOwner && !(isCompanyAdmin && isSameCompany)) {
+        throw new Error("Unauthorized")
     }
 
     await prisma.slip.delete({
@@ -314,8 +355,14 @@ export async function exportSlips() {
     const session = await getServerSession(authOptions)
     if (!session) throw new Error("Unauthorized")
 
+    const isCompanyView = (session.user.role === 'COMPANY_ADMIN' || session.user.role === 'ACCOUNTANT' || session.user.role === 'ADMIN') && session.user.companyId
+
+    const whereClause = isCompanyView
+        ? { user: { companyId: session.user.companyId } }
+        : { userId: session.user.id }
+
     const slips = await prisma.slip.findMany({
-        where: { userId: session.user.id },
+        where: whereClause,
         orderBy: { date: 'desc' },
         include: { tags: true }
     })
@@ -343,4 +390,55 @@ export async function exportSlips() {
     })
 
     return [header, ...rows].join('\n')
+}
+
+export async function inviteUser(formData: FormData) {
+    const session = await getServerSession(authOptions)
+    if (!session) throw new Error("Unauthorized")
+
+    const isCompanyAdmin = (session.user.role === 'COMPANY_ADMIN' || session.user.role === 'ADMIN') && session.user.companyId
+
+    if (!isCompanyAdmin) {
+        throw new Error("Unauthorized: Only company admins can invite users")
+    }
+
+    const name = formData.get('name') as string
+    const email = formData.get('email') as string
+    const role = formData.get('role') as string
+
+    if (!email || !name || !role) {
+        return { success: false, error: "Name, email, and role are required" }
+    }
+
+    try {
+        const existingUser = await prisma.user.findUnique({
+            where: { email }
+        })
+
+        if (existingUser) {
+            return { success: false, error: "User already exists" }
+        }
+
+        // Default password for invited users
+        const hashedPassword = await hash("password123", 12)
+
+        await prisma.user.create({
+            data: {
+                name,
+                email,
+                password: hashedPassword,
+                companyId: session.user.companyId,
+                role: role as any
+            }
+        })
+
+        revalidatePath('/dashboard/settings')
+        return { success: true }
+    } catch (error) {
+        console.error("Invite user error:", error)
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : "Something went wrong during invitation"
+        }
+    }
 }

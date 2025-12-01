@@ -12,11 +12,16 @@ export default async function DashboardPage() {
         return null // Middleware handles redirect
     }
 
+    // Determine access level
+    const isCompanyView = (session.user.role === 'COMPANY_ADMIN' || session.user.role === 'ACCOUNTANT' || session.user.role === 'ADMIN') && session.user.companyId
+
+    const whereClause = isCompanyView
+        ? { user: { companyId: session.user.companyId } }
+        : { userId: session.user.id }
+
     // Fetch recent slips (limit to 4 for the "Recent Uploads" view)
     const recentSlips = await prisma.slip.findMany({
-        where: {
-            userId: session.user.id
-        },
+        where: whereClause,
         orderBy: {
             createdAt: 'desc'
         },
@@ -29,7 +34,7 @@ export default async function DashboardPage() {
 
     // Fetch all slips for analytics
     const allSlips = await prisma.slip.findMany({
-        where: { userId: session.user.id },
+        where: whereClause,
         select: { amountAfterTax: true, tags: true, createdAt: true }
     })
 
