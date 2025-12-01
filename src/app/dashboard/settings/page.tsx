@@ -3,12 +3,9 @@
 import { useSession, signOut } from 'next-auth/react'
 import { User, Settings as SettingsIcon, LogOut, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
-import InviteUserForm from './InviteUserForm'
 
 export default function SettingsPage() {
     const { data: session } = useSession()
-
-    const isCompanyAdmin = (session?.user?.role === 'COMPANY_ADMIN' || session?.user?.role === 'ADMIN') && session?.user?.companyId
 
     return (
         <div className="min-h-screen bg-brand-light flex flex-col">
@@ -35,8 +32,6 @@ export default function SettingsPage() {
             {/* Content Section */}
             <div className="flex-1 px-4 -mt-6">
                 <div className="max-w-3xl mx-auto w-full">
-
-                    {isCompanyAdmin && <InviteUserForm />}
 
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
                         <Link href="/dashboard/account" className="flex items-center justify-between p-5 border-b border-gray-100 hover:bg-gray-50 transition-colors group">
