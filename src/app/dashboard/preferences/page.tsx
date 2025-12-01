@@ -18,6 +18,14 @@ export default async function PreferencesPage() {
     const isCompanyAdmin = (session.user.role === 'COMPANY_ADMIN' || session.user.role === 'ADMIN') && session.user.companyId
     const hasCompany = !!session.user.companyId
 
+    let companyName = session.user.companyName
+    if (!companyName && session.user.companyId) {
+        const company = await prisma.company.findUnique({
+            where: { id: session.user.companyId }
+        })
+        companyName = company?.name || null
+    }
+
     let companyUsers: any[] = []
     if (isCompanyAdmin && session.user.companyId) {
         companyUsers = await prisma.user.findMany({
@@ -47,8 +55,8 @@ export default async function PreferencesPage() {
                         </Link>
                         <h1 className="text-2xl font-bold text-white">Company Preferences</h1>
                     </div>
-                    {session.user.companyName && (
-                        <p className="text-brand-teal font-medium">{session.user.companyName}</p>
+                    {companyName && (
+                        <p className="text-brand-teal font-medium">{companyName}</p>
                     )}
                 </div>
             </div>
@@ -66,7 +74,7 @@ export default async function PreferencesPage() {
                             </h2>
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <div className="font-medium text-gray-900">{session.user.companyName}</div>
+                                    <div className="font-medium text-gray-900">{companyName}</div>
                                     <div className="text-sm text-gray-500">
                                         Role: <span className="capitalize">{session.user.role.replace('_', ' ').toLowerCase()}</span>
                                     </div>
