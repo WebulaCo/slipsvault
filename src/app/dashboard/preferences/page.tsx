@@ -1,10 +1,12 @@
+
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Building2 } from 'lucide-react'
 import Link from 'next/link'
 import InviteUserForm from '../settings/InviteUserForm'
 import UserList from './UserList'
+import LeaveCompanyButton from './LeaveCompanyButton'
 
 export default async function PreferencesPage() {
     const session = await getServerSession(authOptions)
@@ -14,6 +16,7 @@ export default async function PreferencesPage() {
     }
 
     const isCompanyAdmin = (session.user.role === 'COMPANY_ADMIN' || session.user.role === 'ADMIN') && session.user.companyId
+    const hasCompany = !!session.user.companyId
 
     let companyUsers: any[] = []
     if (isCompanyAdmin && session.user.companyId) {
@@ -54,19 +57,42 @@ export default async function PreferencesPage() {
             <div className="flex-1 px-4 -mt-8">
                 <div className="max-w-3xl mx-auto w-full space-y-6">
 
-                    {isCompanyAdmin ? (
+                    {/* My Company Section - Visible to all company members */}
+                    {hasCompany && (
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                            <h2 className="text-lg font-bold text-brand-navy mb-4 flex items-center gap-2">
+                                <Building2 size={20} className="text-brand-teal" />
+                                My Company
+                            </h2>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <div className="font-medium text-gray-900">{session.user.companyName}</div>
+                                    <div className="text-sm text-gray-500">
+                                        Role: <span className="capitalize">{session.user.role.replace('_', ' ').toLowerCase()}</span>
+                                    </div>
+                                </div>
+                                <LeaveCompanyButton />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Admin Section */}
+                    {isCompanyAdmin && (
                         <>
                             <InviteUserForm />
                             <UserList users={companyUsers} />
                         </>
-                    ) : (
+                    )}
+
+                    {/* No Company State */}
+                    {!hasCompany && (
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
                             <div className="w-16 h-16 bg-brand-light rounded-full flex items-center justify-center mx-auto mb-4">
-                                <span className="text-2xl">🔒</span>
+                                <Building2 size={32} className="text-brand-navy" />
                             </div>
-                            <h2 className="text-xl font-bold text-brand-navy mb-2">Access Restricted</h2>
-                            <p className="text-gray-500">
-                                Only company administrators can access these settings.
+                            <h2 className="text-xl font-bold text-brand-navy mb-2">No Company Associated</h2>
+                            <p className="text-gray-500 mb-6">
+                                You are not currently part of any company. Ask your administrator to invite you.
                             </p>
                         </div>
                     )}

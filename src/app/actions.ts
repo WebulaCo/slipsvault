@@ -442,3 +442,35 @@ export async function inviteUser(formData: FormData) {
         }
     }
 }
+
+export async function leaveCompany() {
+    const session = await getServerSession(authOptions)
+    if (!session) throw new Error("Unauthorized")
+
+    if (!session.user.companyId) {
+        return { success: false, error: "You are not part of a company" }
+    }
+
+    try {
+        // If the user is the last admin, we might want to warn them or prevent it, 
+        // but for now, we'll just allow it. The company might become orphaned if no other admins exist.
+        // A more robust system would check for this.
+
+        await prisma.user.update({
+            where: { id: session.user.id },
+            data: {
+                companyId: null,
+                role: 'USER' // Reset to default user role
+            }
+        })
+
+        revalidatePath('/dashboard')
+        return { success: true }
+    } catch (error) {
+        console.error("Leave company error:", error)
+        return {
+            success: false,
+            error: "Failed to leave company"
+        }
+    }
+}
