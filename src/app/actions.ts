@@ -116,6 +116,50 @@ export async function createSlip(formData: FormData) {
         throw new Error(error instanceof Error ? error.message : "Failed to create slip")
     }
 
+    // Check for duplicates and notify admins
+    if (session.user.companyId && dateStr && amountAfterTax) {
+        try {
+            const duplicates = await prisma.slip.findMany({
+                where: {
+                    user: { companyId: session.user.companyId },
+                    amountAfterTax: amountAfterTax,
+                    date: new Date(dateStr),
+                    place: { contains: place },
+                    NOT: { userId: session.user.id } // Don't count self as duplicate of self (though we just created it, so we exclude the current user's slips to find *other* people's duplicates)
+                },
+                include: { user: true }
+            })
+
+            if (duplicates.length > 0) {
+                // Find admins and accountants
+                const admins = await prisma.user.findMany({
+                    where: {
+                        companyId: session.user.companyId,
+                        role: { in: ['COMPANY_ADMIN', 'ACCOUNTANT', 'ADMIN'] }
+                    }
+                })
+
+                const duplicate = duplicates[0]
+                const message = `Possible duplicate slip uploaded by ${session.user.name}. Matches slip "${duplicate.title}" by ${duplicate.user.name || duplicate.user.email}.`
+
+                for (const admin of admins) {
+                    await prisma.notification.create({
+                        data: {
+                            userId: admin.id,
+                            title: "Duplicate Slip Detected",
+                            message: message,
+                            type: "DUPLICATE_WARNING",
+                            link: `/dashboard/slips?q=${encodeURIComponent(place)}` // Link to search for the place
+                        }
+                    })
+                }
+            }
+        } catch (error) {
+            console.error("Failed to process duplicate notifications:", error)
+            // Don't fail the request if notifications fail
+        }
+    }
+
     revalidatePath('/dashboard')
     redirect('/dashboard')
 }
@@ -555,5 +599,53 @@ export async function removeUserFromCompany(userId: string) {
     } catch (error) {
         console.error("Remove user error:", error)
         return { success: false, error: "Failed to remove user" }
+    }
+}
+
+export async function getNotifications() {
+    const session = await getServerSession(authOptions)
+    if (!session) return []
+
+    try {
+        const notifications = await prisma.notification.findMany({
+            where: { userId: session.user.id },
+            orderBy: { createdAt: 'desc' }
+        })
+        return notifications
+    } catch (error) {
+        console.error("Get notifications error:", error)
+        return []
+    }
+}
+
+export async function markNotificationAsRead(id: string) {
+    const session = await getServerSession(authOptions)
+    if (!session) return { success: false }
+
+    try {
+        await prisma.notification.update({
+            where: { id, userId: session.user.id },
+            data: { read: true }
+        })
+        revalidatePath('/dashboard/notifications')
+        return { success: true }
+    } catch (error) {
+        return { success: false }
+    }
+}
+
+export async function clearAllNotifications() {
+    const session = await getServerSession(authOptions)
+    if (!session) return { success: false }
+
+    try {
+        await prisma.notification.updateMany({
+            where: { userId: session.user.id, read: false },
+            data: { read: true }
+        })
+        revalidatePath('/dashboard/notifications')
+        return { success: true }
+    } catch (error) {
+        return { success: false }
     }
 }

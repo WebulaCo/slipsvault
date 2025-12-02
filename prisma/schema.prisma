@@ -39,6 +39,7 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   slips     Slip[]
+  notifications Notification[]
 }
 
 model Slip {
@@ -77,4 +78,16 @@ model Tag {
   updatedAt DateTime @updatedAt
 
   @@unique([name, userId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   // e.g., 'DUPLICATE_WARNING'
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
 }

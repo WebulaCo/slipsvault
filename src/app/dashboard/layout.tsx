@@ -29,6 +29,13 @@ export default async function DashboardLayout({
         }
     })
 
+    const unreadNotificationsCount = await prisma.notification.count({
+        where: {
+            userId: session.user.id,
+            read: false
+        }
+    })
+
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Mobile Top Bar */}
@@ -36,7 +43,7 @@ export default async function DashboardLayout({
 
             {/* Desktop Sidebar */}
             <div className="hidden md:block">
-                <Sidebar user={session.user} tags={tags} />
+                <Sidebar user={session.user} tags={tags} unreadNotificationsCount={unreadNotificationsCount} />
             </div>
 
             {/* Main Content */}

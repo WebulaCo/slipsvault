@@ -3,21 +3,23 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Receipt, Search, Settings, LogOut, PlusCircle, Hash, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Receipt, Search, Settings, LogOut, PlusCircle, Hash, Menu, X, Bell } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 
 interface SidebarProps {
     user: { name?: string | null, email?: string | null }
     tags: { id: string, name: string }[]
+    unreadNotificationsCount?: number
 }
 
-export default function Sidebar({ user, tags }: SidebarProps) {
+export default function Sidebar({ user, tags, unreadNotificationsCount = 0 }: SidebarProps) {
     const pathname = usePathname()
 
     const navItems = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
         { name: 'All Slips', href: '/dashboard/slips', icon: Receipt },
         { name: 'Search', href: '/dashboard/search', icon: Search },
+        { name: 'Notifications', href: '/dashboard/notifications', icon: Bell },
     ]
 
     const [isOpen, setIsOpen] = useState(false)
@@ -75,10 +77,17 @@ export default function Sidebar({ user, tags }: SidebarProps) {
                                 <Link
                                     href={item.href}
                                     onClick={() => setIsOpen(false)}
-                                    className={isActive ? 'active' : ''}
+                                    className={`${isActive ? 'active' : ''} flex justify-between`}
                                 >
-                                    <item.icon size={20} />
-                                    {item.name}
+                                    <div className="flex items-center gap-2">
+                                        <item.icon size={20} />
+                                        {item.name}
+                                    </div>
+                                    {item.name === 'Notifications' && unreadNotificationsCount > 0 && (
+                                        <span className="badge badge-sm badge-error text-white">
+                                            {unreadNotificationsCount}
+                                        </span>
+                                    )}
                                 </Link>
                             </li>
                         )

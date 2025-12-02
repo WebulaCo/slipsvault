@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { analyzeSlip, deleteSlip, checkForDuplicate } from '@/app/actions'
+import { analyzeSlip, deleteSlip } from '@/app/actions'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { UploadCloud, X, MapPin, Hash } from 'lucide-react'
@@ -51,10 +51,6 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
     const [summary, setSummary] = useState(initialData?.summary || '')
     const [tags, setTags] = useState<string>(initialData?.tags?.map((t: { name: string }) => t.name).join(', ') || '')
 
-    // Duplicate State
-    const [duplicateSlip, setDuplicateSlip] = useState<{ id: string, title: string, date: Date, amountAfterTax: number | null } | null>(null)
-    const [showDuplicateModal, setShowDuplicateModal] = useState(false)
-    const [pendingFormData, setPendingFormData] = useState<FormData | null>(null)
     const [error, setError] = useState('')
 
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement> | File) => {
@@ -139,25 +135,7 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
             return
         }
 
-        // For new slips, check for duplicates first
-        const checkData = {
-            place: place,
-            date: date,
-            amount: parseFloat(amount)
-        }
-
-        if (checkData.place && checkData.date && !isNaN(checkData.amount)) {
-            const duplicate = await checkForDuplicate(checkData)
-            if (duplicate) {
-                setDuplicateSlip(duplicate as any)
-                setPendingFormData(formData)
-                setShowDuplicateModal(true)
-                setIsSubmitting(false)
-                return
-            }
-        }
-
-        // No duplicate, proceed
+        // Proceed directly to action
         try {
             await action(formData)
         } catch (err: unknown) {
@@ -168,25 +146,6 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
         }
     }
 
-    const handleDuplicateDecision = async (decision: 'new' | 'view' | 'update') => {
-        setShowDuplicateModal(false)
-
-        if (decision === 'new' && pendingFormData) {
-            setIsSubmitting(true)
-            try {
-                await action(pendingFormData)
-            } catch (err: unknown) {
-                if (err instanceof Error && err.message !== 'NEXT_REDIRECT') {
-                    setError(err.message || 'Failed to create slip')
-                    setIsSubmitting(false)
-                }
-            }
-        } else if (decision === 'view') {
-            router.push(`/dashboard/edit/${duplicateSlip?.id}`)
-        } else if (decision === 'update') {
-            router.push(`/dashboard/edit/${duplicateSlip?.id}`)
-        }
-    }
 
     const [showDeleteModal, setShowDeleteModal] = useState(false)
 
@@ -415,30 +374,6 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                 </div>
             </form>
 
-            {showDuplicateModal && (
-                <div className="modal modal-open">
-                    <div className="modal-box bg-white text-gray-900">
-                        <h3 className="font-bold text-lg text-warning flex items-center gap-2">
-                            Possible Duplicate Found
-                        </h3>
-                        <p className="py-4">
-                            We found a similar slip from <strong>{duplicateSlip?.date ? new Date(duplicateSlip.date).toLocaleDateString() : 'Unknown Date'}</strong> for <strong>{duplicateSlip?.amountAfterTax}</strong>.
-                        </p>
-                        <div className="modal-action flex-col gap-2">
-                            <button onClick={() => handleDuplicateDecision('view')} className="btn btn-outline w-full">
-                                View Existing Slip
-                            </button>
-                            <button onClick={() => handleDuplicateDecision('new')} className="btn btn-primary w-full">
-                                Save as New Anyway
-                            </button>
-                            <button onClick={() => setShowDuplicateModal(false)} className="btn btn-ghost w-full">
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                    <div className="modal-backdrop" onClick={() => setShowDuplicateModal(false)}></div>
-                </div>
-            )}
 
             {showDeleteModal && (
                 <div className="modal modal-open">
