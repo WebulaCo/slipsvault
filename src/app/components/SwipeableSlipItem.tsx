@@ -54,7 +54,8 @@ export default function SwipeableSlipItem({ slip, openLightbox }: SwipeableSlipI
                 try {
                     await deleteSlip(slip.id)
                     router.refresh()
-                } catch (error) {
+                } catch (error: any) {
+                    if (error.message === 'NEXT_REDIRECT') return
                     console.error("Failed to delete", error)
                     alert('Failed to delete slip')
                 }
@@ -173,7 +174,8 @@ export default function SwipeableSlipItem({ slip, openLightbox }: SwipeableSlipI
                                             try {
                                                 await deleteSlip(slip.id)
                                                 router.refresh()
-                                            } catch (error) {
+                                            } catch (error: any) {
+                                                if (error.message === 'NEXT_REDIRECT') return
                                                 console.error("Failed to delete", error)
                                                 alert('Failed to delete slip')
                                             }

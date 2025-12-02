@@ -35,7 +35,8 @@ export default function SlipList({ slips }: SlipListProps) {
             try {
                 await deleteSlip(id)
                 router.refresh()
-            } catch (error) {
+            } catch (error: any) {
+                if (error.message === 'NEXT_REDIRECT') return
                 console.error("Failed to delete", error)
                 alert('Failed to delete slip')
             } finally {

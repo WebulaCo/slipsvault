@@ -15,7 +15,8 @@ export default function DeleteSlipButton({ id, asMenuItem }: { id: string, asMen
         try {
             await deleteSlip(id)
             router.push('/dashboard/slips')
-        } catch (error) {
+        } catch (error: any) {
+            if (error.message === 'NEXT_REDIRECT') return
             console.error("Failed to delete", error)
             setIsDeleting(false)
             setShowModal(false)
