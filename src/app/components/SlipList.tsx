@@ -10,6 +10,10 @@ import { useRouter } from 'next/navigation'
 type SlipWithRelations = Slip & {
     tags: Tag[]
     photos: Photo[]
+    user: {
+        name: string | null
+        email: string
+    }
 }
 
 interface SlipListProps {
@@ -80,6 +84,16 @@ export default function SlipList({ slips }: SlipListProps) {
         }, { once: true })
     }
 
+    const getInitials = (name: string | null | undefined) => {
+        if (!name) return '??'
+        return name
+            .split(' ')
+            .map(n => n[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2)
+    }
+
     if (slips.length === 0) {
         return (
             <div className="card border-2 border-dashed border-base-300 p-16 text-center">
@@ -114,6 +128,8 @@ export default function SlipList({ slips }: SlipListProps) {
                     <thead>
                         <tr>
                             <th>Date</th>
+                            <th>Uploaded</th>
+                            <th>User</th>
                             <th>Title / Merchant</th>
                             <th>Amount</th>
                             <th>Place</th>
@@ -130,6 +146,19 @@ export default function SlipList({ slips }: SlipListProps) {
                             >
                                 <td className="whitespace-nowrap font-mono text-sm">
                                     {slip.date ? new Date(slip.date).toLocaleDateString() : '-'}
+                                </td>
+                                <td className="whitespace-nowrap text-xs text-gray-500">
+                                    {new Date(slip.createdAt).toLocaleString(undefined, {
+                                        dateStyle: 'short',
+                                        timeStyle: 'short'
+                                    })}
+                                </td>
+                                <td>
+                                    <div className="tooltip" data-tip={slip.user.name || slip.user.email}>
+                                        <div className="w-8 h-8 rounded-full bg-neutral text-neutral-content flex items-center justify-center text-xs font-bold">
+                                            {getInitials(slip.user.name || slip.user.email)}
+                                        </div>
+                                    </div>
                                 </td>
                                 <td className="font-medium">
                                     <div className="flex items-center gap-3">
@@ -156,7 +185,7 @@ export default function SlipList({ slips }: SlipListProps) {
                                     </div>
                                 </td>
                                 <td className="font-mono">
-                                    {slip.currency} {slip.amountAfterTax?.toFixed(2)}
+                                    {slip.currency || 'R'} {slip.amountAfterTax?.toFixed(2)}
                                 </td>
                                 <td className="hidden md:table-cell">
                                     {slip.place || '-'}
