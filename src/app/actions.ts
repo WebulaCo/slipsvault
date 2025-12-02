@@ -474,3 +474,85 @@ export async function leaveCompany() {
         }
     }
 }
+
+export async function resetPassword(formData: FormData) {
+    const session = await getServerSession(authOptions)
+    if (!session) throw new Error("Unauthorized")
+
+    const password = formData.get('password') as string
+    const confirmPassword = formData.get('confirmPassword') as string
+
+    if (!password || !confirmPassword) {
+        return { success: false, error: "Password and confirm password are required" }
+    }
+
+    if (password !== confirmPassword) {
+        return { success: false, error: "Passwords do not match" }
+    }
+
+    if (password.length < 6) {
+        return { success: false, error: "Password must be at least 6 characters" }
+    }
+
+    try {
+        const hashedPassword = await hash(password, 12)
+
+        await prisma.user.update({
+            where: { id: session.user.id },
+            data: { password: hashedPassword }
+        })
+
+        return { success: true }
+    } catch (error) {
+        console.error("Reset password error:", error)
+        return { success: false, error: "Failed to reset password" }
+    }
+}
+
+export async function removeUserFromCompany(userId: string) {
+    const session = await getServerSession(authOptions)
+    if (!session) throw new Error("Unauthorized")
+
+    const isCompanyAdmin = (session.user.role === 'COMPANY_ADMIN' || session.user.role === 'ADMIN') && session.user.companyId
+
+    if (!isCompanyAdmin) {
+        throw new Error("Unauthorized: Only company admins can remove users")
+    }
+
+    if (userId === session.user.id) {
+        return { success: false, error: "You cannot remove yourself" }
+    }
+
+    try {
+        const userToRemove = await prisma.user.findUnique({
+            where: { id: userId }
+        })
+
+        if (!userToRemove || userToRemove.companyId !== session.user.companyId) {
+            return { success: false, error: "User not found in your company" }
+        }
+
+        // Transfer all slips to the admin (current user)
+        await prisma.slip.updateMany({
+            where: { userId: userId },
+            data: { userId: session.user.id }
+        })
+
+        // Remove user from company and reset role
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                companyId: null,
+                companyName: null,
+                role: 'USER'
+            }
+        })
+
+        revalidatePath('/dashboard/settings')
+        revalidatePath('/dashboard/preferences')
+        return { success: true }
+    } catch (error) {
+        console.error("Remove user error:", error)
+        return { success: false, error: "Failed to remove user" }
+    }
+}

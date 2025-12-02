@@ -7,6 +7,7 @@ import Link from 'next/link'
 import InviteUserForm from '../settings/InviteUserForm'
 import UserList from './UserList'
 import LeaveCompanyButton from './LeaveCompanyButton'
+import ResetPasswordForm from './ResetPasswordForm'
 
 export default async function PreferencesPage() {
     const session = await getServerSession(authOptions)
@@ -83,6 +84,8 @@ export default async function PreferencesPage() {
                             </div>
                         </div>
                     )}
+
+                    <ResetPasswordForm />
 
                     {/* Admin Section */}
                     {isCompanyAdmin && (

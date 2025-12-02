@@ -20,13 +20,27 @@ export default async function SlipDetailsPage({ params }: SlipDetailsPageProps) 
     const slip = await prisma.slip.findUnique({
         where: {
             id: id,
-            userId: session.user.id
+            // Allow access if it's the user's slip OR if user is admin/accountant in same company
+            // But findUnique only takes unique fields. We need to check permissions after fetch or use findFirst
         },
         include: {
             photos: true,
-            tags: true
+            tags: true,
+            user: true
         }
     })
+
+    if (!slip) notFound()
+
+    // Permission check
+    const isOwner = slip.userId === session.user.id
+    const isCompanyAdmin = (session.user.role === 'COMPANY_ADMIN' || session.user.role === 'ADMIN') && session.user.companyId
+    const isAccountant = session.user.role === 'ACCOUNTANT' && session.user.companyId
+    const isSameCompany = slip.user.companyId === session.user.companyId
+
+    if (!isOwner && !((isCompanyAdmin || isAccountant) && isSameCompany)) {
+        notFound() // Or redirect/unauthorized
+    }
 
     if (!slip) notFound()
 
@@ -107,10 +121,18 @@ export default async function SlipDetailsPage({ params }: SlipDetailsPageProps) 
                         </div>
                     </div>
 
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center border-b border-gray-100 pb-4">
                         <span className="text-gray-500">Place</span>
                         <span className="font-medium text-right max-w-[60%] truncate text-brand-navy">{slip.place || '-'}</span>
                     </div>
+
+                    {/* Show uploader if not the current user */}
+                    {slip.userId !== session.user.id && (
+                        <div className="flex justify-between items-center">
+                            <span className="text-gray-500">Uploaded by</span>
+                            <span className="font-medium text-brand-navy">{slip.user.name || slip.user.email}</span>
+                        </div>
+                    )}
                 </div>
             </div>
 

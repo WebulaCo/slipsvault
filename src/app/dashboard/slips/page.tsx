@@ -14,6 +14,7 @@ interface AllSlipsPageProps {
         start?: string
         end?: string
         category?: string
+        contributor?: string
     }>
 }
 
@@ -24,7 +25,7 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
         return null
     }
 
-    const { q, start, end, category } = await searchParams
+    const { q, start, end, category, contributor } = await searchParams
     const query = q || ''
 
     const isCompanyView = (session.user.role === 'COMPANY_ADMIN' || session.user.role === 'ACCOUNTANT' || session.user.role === 'ADMIN') && session.user.companyId
@@ -58,6 +59,10 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
         }
     }
 
+    if (contributor && isCompanyView) {
+        whereClause.userId = contributor
+    }
+
     const slips = await prisma.slip.findMany({
         where: whereClause,
         orderBy: {
@@ -65,9 +70,18 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
         },
         include: {
             photos: true,
-            tags: true
+            tags: true,
+            user: true
         }
     })
+
+    let companyUsers: any[] = []
+    if (isCompanyView) {
+        companyUsers = await prisma.user.findMany({
+            where: { companyId: session.user.companyId },
+            select: { id: true, name: true, email: true }
+        })
+    }
 
     return (
         <div className="pb-20">
@@ -105,9 +119,23 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
                 <button className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap">
                     Date: All time
                 </button>
-                <button className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap">
-                    Amount
-                </button>
+                {isCompanyView && (
+                    <div className="dropdown">
+                        <div tabIndex={0} role="button" className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap border ${contributor ? 'bg-brand-teal/10 text-brand-teal border-brand-teal' : 'bg-white border-gray-200 text-gray-700'}`}>
+                            Contributor: {contributor ? companyUsers.find(u => u.id === contributor)?.name || 'Unknown' : 'All'}
+                        </div>
+                        <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
+                            <li><Link href="/dashboard/slips">All Contributors</Link></li>
+                            {companyUsers.map(user => (
+                                <li key={user.id}>
+                                    <Link href={`/dashboard/slips?contributor=${user.id}`}>
+                                        {user.name || user.email}
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
             </div>
 
             {/* Slips List */}
