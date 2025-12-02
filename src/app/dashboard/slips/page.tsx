@@ -6,7 +6,7 @@ import SearchInput from "@/app/components/SearchInput"
 import ExportButton from "@/app/components/ExportButton"
 import { Filter, Calendar, ArrowUpDown, ChevronLeft, Plus, Search, SlidersHorizontal, ChevronRight, Receipt } from "lucide-react"
 import Link from "next/link"
-import AllSlipsList from "./AllSlipsList"
+
 
 interface AllSlipsPageProps {
     searchParams: Promise<{
@@ -69,17 +69,6 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
         }
     })
 
-    // Group slips by month
-    const slipsByMonth: Record<string, typeof slips> = {}
-    slips.forEach(slip => {
-        const date = new Date(slip.date || slip.createdAt)
-        const monthYear = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase()
-        if (!slipsByMonth[monthYear]) {
-            slipsByMonth[monthYear] = []
-        }
-        slipsByMonth[monthYear].push(slip)
-    })
-
     return (
         <div className="pb-20">
             {/* Header */}
@@ -121,8 +110,8 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
                 </button>
             </div>
 
-            {/* Slips List Grouped by Month */}
-            <AllSlipsList slipsByMonth={slipsByMonth} />
+            {/* Slips List */}
+            <SlipList slips={slips} />
         </div>
     )
 }
