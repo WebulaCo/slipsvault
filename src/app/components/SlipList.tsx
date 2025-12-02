@@ -45,33 +45,30 @@ export default function SlipList({ slips }: SlipListProps) {
         }
     }
 
-    const SlipMenu = ({ slip }: { slip: SlipWithRelations }) => (
-        <div className="dropdown dropdown-end dropdown-left">
-            <div tabIndex={0} role="button" className="btn btn-ghost btn-circle btn-sm">
-                <MoreVertical size={20} className="text-gray-400" />
-            </div>
-            <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow-lg bg-white rounded-box w-52 border border-gray-100">
-                <li>
-                    <Link href={`/dashboard/slips/${slip.id}`} className="flex items-center gap-2 text-gray-700 hover:bg-gray-50">
-                        <Receipt size={16} />
-                        View Details
-                    </Link>
-                </li>
-                <li>
-                    <Link href={`/dashboard/edit/${slip.id}`} className="flex items-center gap-2 text-gray-700 hover:bg-gray-50">
-                        <Edit size={16} />
-                        Edit Slip
-                    </Link>
-                </li>
-                <li>
-                    <button onClick={() => handleDelete(slip.id)} className="flex items-center gap-2 text-red-600 hover:bg-red-50">
-                        {deletingId === slip.id ? <span className="loading loading-spinner loading-xs"></span> : <Trash2 size={16} />}
-                        Delete
-                    </button>
-                </li>
-            </ul>
-        </div>
-    )
+    const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
+    const [menuPosition, setMenuPosition] = useState<{ top: number, left: number } | null>(null)
+
+    const handleMenuClick = (e: React.MouseEvent, id: string) => {
+        e.stopPropagation()
+        const rect = e.currentTarget.getBoundingClientRect()
+        setMenuPosition({
+            top: rect.bottom + window.scrollY,
+            left: rect.right - 208 + window.scrollX // 208px is w-52
+        })
+        setActiveMenuId(activeMenuId === id ? null : id)
+    }
+
+    // Close menu when clicking outside
+    const [isClient, setIsClient] = useState(false)
+    if (typeof window !== 'undefined' && !isClient) {
+        setIsClient(true)
+    }
+
+    if (isClient) {
+        window.addEventListener('click', () => {
+            if (activeMenuId) setActiveMenuId(null)
+        }, { once: true })
+    }
 
     if (slips.length === 0) {
         return (
@@ -91,7 +88,7 @@ export default function SlipList({ slips }: SlipListProps) {
     }
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 relative">
             <div className="md:hidden">
                 {slips.map((slip) => (
                     <SwipeableSlipItem
@@ -164,13 +161,54 @@ export default function SlipList({ slips }: SlipListProps) {
                                     </div>
                                 </td>
                                 <td className="text-right" onClick={(e) => e.stopPropagation()}>
-                                    <SlipMenu slip={slip} />
+                                    <button
+                                        className="btn btn-ghost btn-circle btn-sm"
+                                        onClick={(e) => handleMenuClick(e, slip.id)}
+                                    >
+                                        <MoreVertical size={20} className="text-gray-400" />
+                                    </button>
                                 </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
             </div>
+
+            {/* Fixed Menu */}
+            {activeMenuId && menuPosition && (
+                <div
+                    className="fixed z-50 bg-white rounded-box w-52 border border-gray-100 shadow-lg p-2 menu"
+                    style={{
+                        top: menuPosition.top,
+                        left: menuPosition.left
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <ul>
+                        <li>
+                            <Link href={`/dashboard/slips/${activeMenuId}`} className="flex items-center gap-2 text-gray-700 hover:bg-gray-50">
+                                <Receipt size={16} />
+                                View Details
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href={`/dashboard/edit/${activeMenuId}`} className="flex items-center gap-2 text-gray-700 hover:bg-gray-50">
+                                <Edit size={16} />
+                                Edit Slip
+                            </Link>
+                        </li>
+                        <li>
+                            <button onClick={() => {
+                                handleDelete(activeMenuId)
+                                setActiveMenuId(null)
+                            }} className="flex items-center gap-2 text-red-600 hover:bg-red-50">
+                                {deletingId === activeMenuId ? <span className="loading loading-spinner loading-xs"></span> : <Trash2 size={16} />}
+                                Delete
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            )}
 
             {lightboxOpen && selectedImage && (
                 <div className="modal modal-open" onClick={() => setLightboxOpen(false)}>

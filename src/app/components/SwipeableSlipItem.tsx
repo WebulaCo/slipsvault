@@ -144,7 +144,7 @@ export default function SwipeableSlipItem({ slip, openLightbox }: SwipeableSlipI
 
                     {showMenu && (
                         <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/50" onClick={() => setShowMenu(false)}>
-                            <div className="bg-white w-full sm:w-80 sm:rounded-2xl rounded-t-2xl p-4 space-y-2 animate-in slide-in-from-bottom-10 fade-in duration-200" onClick={e => e.stopPropagation()}>
+                            <div className="bg-white w-full sm:w-80 sm:rounded-2xl rounded-t-2xl p-4 space-y-2" onClick={e => e.stopPropagation()}>
                                 <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-4 sm:hidden" />
 
                                 <h3 className="text-center font-bold text-gray-900 mb-4">Actions</h3>
