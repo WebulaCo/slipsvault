@@ -649,3 +649,17 @@ export async function clearAllNotifications() {
         return { success: false }
     }
 }
+export async function deleteNotification(id: string) {
+    const session = await getServerSession(authOptions)
+    if (!session) return { success: false }
+
+    try {
+        await prisma.notification.delete({
+            where: { id, userId: session.user.id }
+        })
+        revalidatePath('/dashboard/notifications')
+        return { success: true }
+    } catch (error) {
+        return { success: false }
+    }
+}
