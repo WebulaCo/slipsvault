@@ -118,7 +118,9 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
 
         if (photoUrl) {
             formData.append('photoUrl', photoUrl)
-        } else if (file) {
+        }
+
+        if (file) {
             formData.append('photo', file)
         }
 

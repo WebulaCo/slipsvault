@@ -60,13 +60,14 @@ export async function createSlip(formData: FormData) {
     const amountAfterTax = formData.get('amountAfterTax') ? parseFloat(formData.get('amountAfterTax') as string) : null
 
     const file = formData.get('photo') as File | null
+    const existingPhotoUrl = formData.get('photoUrl') as string
 
     const tagsString = formData.get('tags') as string
     const tags = tagsString ? tagsString.split(',').map(t => t.trim()).filter(t => t.length > 0) : []
 
-    let photoUrl: string | undefined = undefined
+    let photoUrl: string | undefined = existingPhotoUrl
 
-    if (file && file.size > 0) {
+    if (!photoUrl && file && file.size > 0) {
         const storage = getStorageService()
         photoUrl = await storage.saveFile(file)
     }
