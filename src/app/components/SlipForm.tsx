@@ -417,7 +417,7 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
 
             {showDuplicateModal && (
                 <div className="modal modal-open">
-                    <div className="modal-box text-gray-900">
+                    <div className="modal-box bg-white text-gray-900">
                         <h3 className="font-bold text-lg text-warning flex items-center gap-2">
                             Possible Duplicate Found
                         </h3>
@@ -442,7 +442,7 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
 
             {showDeleteModal && (
                 <div className="modal modal-open">
-                    <div className="modal-box text-gray-900">
+                    <div className="modal-box bg-white text-gray-900">
                         <h3 className="font-bold text-lg text-error">Delete Slip?</h3>
                         <p className="py-4">
                             Are you sure you want to delete this slip? This action cannot be undone.
