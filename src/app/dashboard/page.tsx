@@ -28,7 +28,8 @@ export default async function DashboardPage() {
         take: 4,
         include: {
             photos: true,
-            tags: true
+            tags: true,
+            user: true
         }
     })
 
