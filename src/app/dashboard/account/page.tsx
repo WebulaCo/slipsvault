@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { updateUser } from '@/app/actions'
 import { ArrowLeft, Save } from 'lucide-react'
 import Link from 'next/link'
+import ResetPasswordForm from './ResetPasswordForm'
 
 export default function AccountPage() {
     const { data: session, update } = useSession()
@@ -116,6 +117,10 @@ export default function AccountPage() {
                                 )}
                             </button>
                         </form>
+                    </div>
+
+                    <div className="mt-6">
+                        <ResetPasswordForm />
                     </div>
                 </div>
             </div>
