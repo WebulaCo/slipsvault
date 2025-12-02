@@ -141,63 +141,63 @@ export default function SwipeableSlipItem({ slip, openLightbox }: SwipeableSlipI
                     >
                         <MoreVertical size={20} className="text-gray-400" />
                     </button>
-
-                    {showMenu && (
-                        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/50" onClick={() => setShowMenu(false)}>
-                            <div className="bg-white w-full sm:w-80 sm:rounded-2xl rounded-t-2xl p-4 space-y-2" onClick={e => e.stopPropagation()}>
-                                <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-4 sm:hidden" />
-
-                                <h3 className="text-center font-bold text-gray-900 mb-4">Actions</h3>
-
-                                <Link
-                                    href={`/dashboard/slips/${slip.id}`}
-                                    className="btn btn-ghost w-full justify-start text-gray-700 text-base h-12"
-                                    onClick={() => setShowMenu(false)}
-                                >
-                                    <Receipt size={20} />
-                                    View Details
-                                </Link>
-
-                                <Link
-                                    href={`/dashboard/edit/${slip.id}`}
-                                    className="btn btn-ghost w-full justify-start text-gray-700 text-base h-12"
-                                    onClick={() => setShowMenu(false)}
-                                >
-                                    <Edit size={20} />
-                                    Edit Slip
-                                </Link>
-
-                                <button
-                                    onClick={async () => {
-                                        setShowMenu(false);
-                                        if (confirm('Are you sure you want to delete this slip?')) {
-                                            try {
-                                                await deleteSlip(slip.id)
-                                                router.refresh()
-                                            } catch (error: any) {
-                                                if (error.message === 'NEXT_REDIRECT') return
-                                                console.error("Failed to delete", error)
-                                                alert('Failed to delete slip')
-                                            }
-                                        }
-                                    }}
-                                    className="btn btn-ghost w-full justify-start text-red-600 hover:bg-red-50 text-base h-12"
-                                >
-                                    <Trash2 size={20} />
-                                    Delete Slip
-                                </button>
-
-                                <button
-                                    className="btn btn-outline w-full mt-4 rounded-xl"
-                                    onClick={() => setShowMenu(false)}
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
+
+            {showMenu && (
+                <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/50" onClick={() => setShowMenu(false)}>
+                    <div className="bg-white w-full sm:w-80 sm:rounded-2xl rounded-t-2xl p-4 space-y-2" onClick={e => e.stopPropagation()}>
+                        <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-4 sm:hidden" />
+
+                        <h3 className="text-center font-bold text-gray-900 mb-4">Actions</h3>
+
+                        <Link
+                            href={`/dashboard/slips/${slip.id}`}
+                            className="btn btn-ghost w-full justify-start text-gray-700 text-base h-12"
+                            onClick={() => setShowMenu(false)}
+                        >
+                            <Receipt size={20} />
+                            View Details
+                        </Link>
+
+                        <Link
+                            href={`/dashboard/edit/${slip.id}`}
+                            className="btn btn-ghost w-full justify-start text-gray-700 text-base h-12"
+                            onClick={() => setShowMenu(false)}
+                        >
+                            <Edit size={20} />
+                            Edit Slip
+                        </Link>
+
+                        <button
+                            onClick={async () => {
+                                setShowMenu(false);
+                                if (confirm('Are you sure you want to delete this slip?')) {
+                                    try {
+                                        await deleteSlip(slip.id)
+                                        router.refresh()
+                                    } catch (error: any) {
+                                        if (error.message === 'NEXT_REDIRECT') return
+                                        console.error("Failed to delete", error)
+                                        alert('Failed to delete slip')
+                                    }
+                                }
+                            }}
+                            className="btn btn-ghost w-full justify-start text-red-600 hover:bg-red-50 text-base h-12"
+                        >
+                            <Trash2 size={20} />
+                            Delete Slip
+                        </button>
+
+                        <button
+                            className="btn btn-outline w-full mt-4 rounded-xl"
+                            onClick={() => setShowMenu(false)}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

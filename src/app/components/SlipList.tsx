@@ -116,7 +116,7 @@ export default function SlipList({ slips }: SlipListProps) {
                             <tr
                                 key={slip.id}
                                 className="hover cursor-pointer"
-                                onClick={() => router.push(`/dashboard/edit/${slip.id}`)}
+                                onClick={() => router.push(`/dashboard/slips/${slip.id}`)}
                             >
                                 <td className="whitespace-nowrap font-mono text-sm">
                                     {slip.date ? new Date(slip.date).toLocaleDateString() : '-'}
