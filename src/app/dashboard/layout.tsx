@@ -54,7 +54,7 @@ export default async function DashboardLayout({
             </main>
 
             {/* Mobile Bottom Nav */}
-            <MobileNav />
+            <MobileNav unreadNotificationsCount={unreadNotificationsCount} />
         </div>
     )
 }
