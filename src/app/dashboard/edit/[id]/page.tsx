@@ -20,10 +20,28 @@ export default async function EditSlipPage({ params }: EditSlipPageProps) {
 
     const slip = await prisma.slip.findUnique({
         where: { id },
-        include: { photos: true, tags: true }
+        include: {
+            photos: true,
+            tags: true,
+            user: {
+                select: {
+                    id: true,
+                    companyId: true
+                }
+            }
+        }
     })
 
-    if (!slip || slip.userId !== session.user.id) {
+    if (!slip) {
+        notFound()
+    }
+
+    const isOwner = slip.userId === session.user.id
+    const isCompanyAdmin = (session.user.role === 'COMPANY_ADMIN' || session.user.role === 'ADMIN') && session.user.companyId
+    const isAccountant = session.user.role === 'ACCOUNTANT' && session.user.companyId
+    const isSameCompany = slip.user.companyId === session.user.companyId
+
+    if (!isOwner && !((isCompanyAdmin || isAccountant) && isSameCompany)) {
         notFound()
     }
 

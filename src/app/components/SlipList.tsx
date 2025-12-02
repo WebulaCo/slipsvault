@@ -109,7 +109,11 @@ export default function SlipList({ slips }: SlipListProps) {
                     </thead>
                     <tbody>
                         {slips.map((slip) => (
-                            <tr key={slip.id} className="hover">
+                            <tr
+                                key={slip.id}
+                                className="hover cursor-pointer"
+                                onClick={() => router.push(`/dashboard/edit/${slip.id}`)}
+                            >
                                 <td className="whitespace-nowrap font-mono text-sm">
                                     {slip.date ? new Date(slip.date).toLocaleDateString() : '-'}
                                 </td>
@@ -117,7 +121,13 @@ export default function SlipList({ slips }: SlipListProps) {
                                     <div className="flex items-center gap-3">
                                         {slip.photos.length > 0 && (
                                             <div className="avatar">
-                                                <div className="w-8 h-8 rounded bg-base-200 cursor-pointer hover:ring-2 hover:ring-primary transition-all" onClick={() => openLightbox(slip.photos[0].url)}>
+                                                <div
+                                                    className="w-8 h-8 rounded bg-base-200 cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        openLightbox(slip.photos[0].url)
+                                                    }}
+                                                >
                                                     <img
                                                         src={slip.photos[0].url.startsWith('http') ? slip.photos[0].url : `/uploads/${slip.photos[0].url.split('/').pop()}`}
                                                         alt={slip.title}
@@ -146,7 +156,7 @@ export default function SlipList({ slips }: SlipListProps) {
                                         ))}
                                     </div>
                                 </td>
-                                <td className="text-right">
+                                <td className="text-right" onClick={(e) => e.stopPropagation()}>
                                     <SlipMenu slip={slip} />
                                 </td>
                             </tr>
