@@ -7,7 +7,7 @@ interface SlipData {
     amountAfterTax?: number;
     currency?: string;
     summary?: string;
-    tags?: string[];
+    tag?: string;
 }
 
 export async function extractTextFromImage(buffer: Buffer): Promise<string> {
@@ -69,7 +69,7 @@ export async function analyzeImageWithGemini(buffer: Buffer, mimeType: string = 
             - amountAfterTax: The total amount paid (number).
             - currency: The currency symbol (e.g., R, $, €).
             - summary: A brief summary of the items purchased (max 200 chars).
-            - tags: A list of categories for this expense (e.g., Food, Transport, Groceries, Utilities, Shopping, Health, Entertainment, Travel).
+            - tag: Choose EXACTLY ONE category from this list: Food, Transport, Groceries, Utilities, Shopping, Health, Entertainment, Travel, Office Supplies, Accommodation, Other.
             
             Return ONLY the JSON object.
         `;

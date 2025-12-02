@@ -50,9 +50,16 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
     const [amount, setAmount] = useState(initialData?.amountAfterTax?.toString() || '')
     const [currency, setCurrency] = useState(initialData?.currency || '')
     const [summary, setSummary] = useState(initialData?.summary || '')
-    const [tags, setTags] = useState<string>(initialData?.tags?.map((t: { name: string }) => t.name).join(', ') || '')
+    // Use the first tag if available, otherwise empty string
+    const [tag, setTag] = useState<string>(initialData?.tags && initialData.tags.length > 0 ? initialData.tags[0].name : '')
 
     const [error, setError] = useState('')
+
+    const categories = [
+        'Food', 'Transport', 'Groceries', 'Utilities', 'Shopping',
+        'Health', 'Entertainment', 'Travel', 'Office Supplies',
+        'Accommodation', 'Other'
+    ]
 
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement> | File) => {
         let selectedFile: File | undefined
@@ -91,8 +98,12 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                 if (result.data!.date) setDate(result.data!.date)
                 if (result.data!.amountAfterTax) setAmount(result.data!.amountAfterTax.toString())
                 if (result.data!.currency) setCurrency(result.data!.currency)
-                if (result.data!.tags && result.data!.tags.length > 0) {
-                    setTags(result.data!.tags.join(', '))
+                if (result.data!.tag) {
+                    // Check if the returned tag is in our list, otherwise default to Other or keep as is if valid
+                    const suggestedTag = result.data!.tag
+                    // Simple fuzzy match or exact match? Let's try exact match first, or case-insensitive
+                    const match = categories.find(c => c.toLowerCase() === suggestedTag.toLowerCase())
+                    setTag(match || 'Other')
                 }
             } else {
                 console.warn("Analysis returned empty data", result.data);
@@ -121,8 +132,8 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
             formData.append('photo', file)
         }
 
-        // Append tags manually as they are controlled state
-        formData.set('tags', tags)
+        // Append tag manually as it is controlled state
+        formData.set('tag', tag)
 
         if (initialData) {
             try {
@@ -336,25 +347,28 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                         </div>
                     </div>
 
-                    {/* Tags Input */}
+                    {/* Tag Select */}
                     <div className="form-control w-full">
                         <label className="label">
-                            <span className={`label-text font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Tags</span>
+                            <span className={`label-text font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Category</span>
                         </label>
                         <div className="relative">
                             <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                            <input
-                                type="text"
-                                name="tags"
-                                placeholder="e.g. groceries, travel, dining"
-                                className={`${inputClass} pl-10`}
-                                value={tags}
-                                onChange={(e) => setTags(e.target.value)}
-                            />
+                            <select
+                                name="tag"
+                                className={`${inputClass} pl-10 appearance-none`}
+                                value={tag}
+                                onChange={(e) => setTag(e.target.value)}
+                            >
+                                <option value="" disabled>Select a category</option>
+                                {categories.map((cat) => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                            </select>
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                                <svg className="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
+                            </div>
                         </div>
-                        <label className="label">
-                            <span className="label-text-alt text-gray-500">Separate multiple tags with commas</span>
-                        </label>
                     </div>
 
                     {/* Submit Button */}

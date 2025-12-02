@@ -62,8 +62,7 @@ export async function createSlip(formData: FormData) {
     const file = formData.get('photo') as File | null
     const existingPhotoUrl = formData.get('photoUrl') as string
 
-    const tagsString = formData.get('tags') as string
-    const tags = tagsString ? tagsString.split(',').map(t => t.trim()).filter(t => t.length > 0) : []
+    const tag = formData.get('tag') as string
 
     let photoUrl: string | undefined = existingPhotoUrl
 
@@ -76,18 +75,20 @@ export async function createSlip(formData: FormData) {
         throw new Error("Title is required")
     }
 
-    const tagConnectOrCreate = tags.map(tagName => ({
+    // We only support one tag now, but the schema supports many.
+    // We will connect or create the single selected tag.
+    const tagConnectOrCreate = tag ? [{
         where: {
             name_userId: {
-                name: tagName,
+                name: tag,
                 userId: session.user.id
             }
         },
         create: {
-            name: tagName,
+            name: tag,
             userId: session.user.id
         }
-    }))
+    }] : []
 
     try {
         await prisma.slip.create({
@@ -267,8 +268,7 @@ export async function updateSlip(formData: FormData) {
     const existingUrl = formData.get('photoUrl') as string
 
     // Tags handling
-    const tagsString = formData.get('tags') as string
-    const tags = tagsString ? tagsString.split(',').map(t => t.trim()).filter(t => t.length > 0) : []
+    const tag = formData.get('tag') as string
 
     let photoUrl: string | undefined = existingUrl
 
@@ -298,18 +298,18 @@ export async function updateSlip(formData: FormData) {
     }
 
     // Handle Tags: Connect or Create
-    const tagConnectOrCreate = tags.map(tagName => ({
+    const tagConnectOrCreate = tag ? [{
         where: {
             name_userId: {
-                name: tagName,
+                name: tag,
                 userId: session.user.id
             }
         },
         create: {
-            name: tagName,
+            name: tag,
             userId: session.user.id
         }
-    }))
+    }] : []
 
     await prisma.slip.update({
         where: { id },
@@ -327,7 +327,7 @@ export async function updateSlip(formData: FormData) {
                 create: { url: photoUrl }
             } : undefined,
             tags: {
-                set: [],
+                set: [], // Clear existing tags to enforce single tag
                 connectOrCreate: tagConnectOrCreate
             }
         }
