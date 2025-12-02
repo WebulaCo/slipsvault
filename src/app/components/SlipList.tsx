@@ -17,11 +17,14 @@ interface SlipListProps {
 }
 
 import SwipeableSlipItem from './SwipeableSlipItem'
+import DeleteConfirmationModal from './DeleteConfirmationModal'
 
 export default function SlipList({ slips }: SlipListProps) {
     const [lightboxOpen, setLightboxOpen] = useState(false)
     const [selectedImage, setSelectedImage] = useState<string | null>(null)
-    const [deletingId, setDeletingId] = useState<string | null>(null)
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+    const [slipToDelete, setSlipToDelete] = useState<string | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
     const router = useRouter()
 
     const openLightbox = (url: string) => {
@@ -29,19 +32,26 @@ export default function SlipList({ slips }: SlipListProps) {
         setLightboxOpen(true)
     }
 
-    const handleDelete = async (id: string) => {
-        if (confirm('Are you sure you want to delete this slip?')) {
-            setDeletingId(id)
-            try {
-                await deleteSlip(id)
-                router.refresh()
-            } catch (error: any) {
-                if (error.message === 'NEXT_REDIRECT') return
-                console.error("Failed to delete", error)
-                alert('Failed to delete slip')
-            } finally {
-                setDeletingId(null)
-            }
+    const confirmDelete = (id: string) => {
+        setSlipToDelete(id)
+        setDeleteModalOpen(true)
+    }
+
+    const handleDelete = async () => {
+        if (!slipToDelete) return
+
+        setIsDeleting(true)
+        try {
+            await deleteSlip(slipToDelete)
+            router.refresh()
+        } catch (error: any) {
+            if (error.message === 'NEXT_REDIRECT') return
+            console.error("Failed to delete", error)
+            alert('Failed to delete slip')
+        } finally {
+            setIsDeleting(false)
+            setDeleteModalOpen(false)
+            setSlipToDelete(null)
         }
     }
 
@@ -199,10 +209,10 @@ export default function SlipList({ slips }: SlipListProps) {
                         </li>
                         <li>
                             <button onClick={() => {
-                                handleDelete(activeMenuId)
+                                confirmDelete(activeMenuId)
                                 setActiveMenuId(null)
                             }} className="flex items-center gap-2 text-red-600 hover:bg-red-50">
-                                {deletingId === activeMenuId ? <span className="loading loading-spinner loading-xs"></span> : <Trash2 size={16} />}
+                                <Trash2 size={16} />
                                 Delete
                             </button>
                         </li>
@@ -224,6 +234,13 @@ export default function SlipList({ slips }: SlipListProps) {
                     <div className="modal-backdrop bg-black/80"></div>
                 </div>
             )}
+
+            <DeleteConfirmationModal
+                isOpen={deleteModalOpen}
+                onClose={() => setDeleteModalOpen(false)}
+                onConfirm={handleDelete}
+                isDeleting={isDeleting}
+            />
         </div>
     )
 }

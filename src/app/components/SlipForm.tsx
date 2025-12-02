@@ -5,6 +5,7 @@ import { analyzeSlip, deleteSlip } from '@/app/actions'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { UploadCloud, X, MapPin, Hash } from 'lucide-react'
+import DeleteConfirmationModal from './DeleteConfirmationModal'
 
 interface SlipData {
     id?: string
@@ -375,25 +376,12 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
             </form>
 
 
-            {showDeleteModal && (
-                <div className="modal modal-open">
-                    <div className="modal-box bg-white text-gray-900">
-                        <h3 className="font-bold text-lg text-error">Delete Slip?</h3>
-                        <p className="py-4">
-                            Are you sure you want to delete this slip? This action cannot be undone.
-                        </p>
-                        <div className="modal-action">
-                            <button onClick={() => setShowDeleteModal(false)} className="btn btn-ghost" disabled={isSubmitting}>
-                                Cancel
-                            </button>
-                            <button onClick={executeDelete} className="btn btn-error" disabled={isSubmitting}>
-                                {isSubmitting ? <span className="loading loading-spinner loading-sm"></span> : 'Yes, Delete Slip'}
-                            </button>
-                        </div>
-                    </div>
-                    <div className="modal-backdrop" onClick={() => setShowDeleteModal(false)}></div>
-                </div>
-            )}
+            <DeleteConfirmationModal
+                isOpen={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={executeDelete}
+                isDeleting={isSubmitting}
+            />
         </>
     )
 }

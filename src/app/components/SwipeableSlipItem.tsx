@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Receipt, Edit, Trash2, MoreVertical } from 'lucide-react'
 import { deleteSlip } from '@/app/actions'
 import Link from 'next/link'
+import DeleteConfirmationModal from './DeleteConfirmationModal'
 
 type SlipWithRelations = Slip & {
     tags: Tag[]
@@ -23,6 +24,8 @@ export default function SwipeableSlipItem({ slip, openLightbox }: SwipeableSlipI
     const [currentX, setCurrentX] = useState<number>(0)
     const [isSwiping, setIsSwiping] = useState(false)
     const [showMenu, setShowMenu] = useState(false)
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
     const itemRef = useRef<HTMLDivElement>(null)
 
     const SWIPE_THRESHOLD = 100
@@ -50,23 +53,30 @@ export default function SwipeableSlipItem({ slip, openLightbox }: SwipeableSlipI
             router.push(`/dashboard/edit/${slip.id}`)
             setCurrentX(0)
         } else if (currentX < -SWIPE_THRESHOLD) {
-            if (confirm('Are you sure you want to delete this slip?')) {
-                try {
-                    await deleteSlip(slip.id)
-                    router.refresh()
-                } catch (error: any) {
-                    if (error.message === 'NEXT_REDIRECT') return
-                    console.error("Failed to delete", error)
-                    alert('Failed to delete slip')
-                }
-            }
-            setCurrentX(0)
+            setDeleteModalOpen(true)
+            // Don't reset currentX yet, let it stay swiped until action
         } else {
             setCurrentX(0)
         }
 
         setStartX(null)
         setTimeout(() => setIsSwiping(false), 100)
+    }
+
+    const handleDelete = async () => {
+        setIsDeleting(true)
+        try {
+            await deleteSlip(slip.id)
+            router.refresh()
+        } catch (error: any) {
+            if (error.message === 'NEXT_REDIRECT') return
+            console.error("Failed to delete", error)
+            alert('Failed to delete slip')
+            setCurrentX(0) // Reset swipe on error
+        } finally {
+            setIsDeleting(false)
+            setDeleteModalOpen(false)
+        }
     }
 
     const getBackgroundStyle = () => {
@@ -170,18 +180,9 @@ export default function SwipeableSlipItem({ slip, openLightbox }: SwipeableSlipI
                         </Link>
 
                         <button
-                            onClick={async () => {
+                            onClick={() => {
                                 setShowMenu(false);
-                                if (confirm('Are you sure you want to delete this slip?')) {
-                                    try {
-                                        await deleteSlip(slip.id)
-                                        router.refresh()
-                                    } catch (error: any) {
-                                        if (error.message === 'NEXT_REDIRECT') return
-                                        console.error("Failed to delete", error)
-                                        alert('Failed to delete slip')
-                                    }
-                                }
+                                setDeleteModalOpen(true)
                             }}
                             className="btn btn-ghost w-full justify-start text-red-600 hover:bg-red-50 text-base h-12"
                         >
@@ -198,6 +199,16 @@ export default function SwipeableSlipItem({ slip, openLightbox }: SwipeableSlipI
                     </div>
                 </div>
             )}
+
+            <DeleteConfirmationModal
+                isOpen={deleteModalOpen}
+                onClose={() => {
+                    setDeleteModalOpen(false)
+                    setCurrentX(0) // Reset swipe if cancelled
+                }}
+                onConfirm={handleDelete}
+                isDeleting={isDeleting}
+            />
         </div>
     )
 }
