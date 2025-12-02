@@ -22,6 +22,7 @@ export default function SwipeableSlipItem({ slip, openLightbox }: SwipeableSlipI
     const [startX, setStartX] = useState<number | null>(null)
     const [currentX, setCurrentX] = useState<number>(0)
     const [isSwiping, setIsSwiping] = useState(false)
+    const [showMenu, setShowMenu] = useState(false)
     const itemRef = useRef<HTMLDivElement>(null)
 
     const SWIPE_THRESHOLD = 100
@@ -133,41 +134,66 @@ export default function SwipeableSlipItem({ slip, openLightbox }: SwipeableSlipI
                 </div>
 
                 <div className="pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-                    <div className="dropdown dropdown-end">
-                        <div tabIndex={0} role="button" className="btn btn-ghost btn-circle btn-sm">
-                            <MoreVertical size={20} className="text-gray-400" />
-                        </div>
-                        <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow-lg bg-white rounded-box w-52 border border-gray-100">
-                            <li>
-                                <Link href={`/dashboard/slips/${slip.id}`} className="flex items-center gap-2 text-gray-700 hover:bg-gray-50">
-                                    <Receipt size={16} />
+                    <button
+                        onClick={() => setShowMenu(true)}
+                        className="btn btn-ghost btn-circle btn-sm"
+                    >
+                        <MoreVertical size={20} className="text-gray-400" />
+                    </button>
+
+                    {showMenu && (
+                        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/50" onClick={() => setShowMenu(false)}>
+                            <div className="bg-white w-full sm:w-80 sm:rounded-2xl rounded-t-2xl p-4 space-y-2 animate-in slide-in-from-bottom-10 fade-in duration-200" onClick={e => e.stopPropagation()}>
+                                <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-4 sm:hidden" />
+
+                                <h3 className="text-center font-bold text-gray-900 mb-4">Actions</h3>
+
+                                <Link
+                                    href={`/dashboard/slips/${slip.id}`}
+                                    className="btn btn-ghost w-full justify-start text-gray-700 text-base h-12"
+                                    onClick={() => setShowMenu(false)}
+                                >
+                                    <Receipt size={20} />
                                     View Details
                                 </Link>
-                            </li>
-                            <li>
-                                <Link href={`/dashboard/edit/${slip.id}`} className="flex items-center gap-2 text-gray-700 hover:bg-gray-50">
-                                    <Edit size={16} />
+
+                                <Link
+                                    href={`/dashboard/edit/${slip.id}`}
+                                    className="btn btn-ghost w-full justify-start text-gray-700 text-base h-12"
+                                    onClick={() => setShowMenu(false)}
+                                >
+                                    <Edit size={20} />
                                     Edit Slip
                                 </Link>
-                            </li>
-                            <li>
-                                <button onClick={async () => {
-                                    if (confirm('Are you sure you want to delete this slip?')) {
-                                        try {
-                                            await deleteSlip(slip.id)
-                                            router.refresh()
-                                        } catch (error) {
-                                            console.error("Failed to delete", error)
-                                            alert('Failed to delete slip')
+
+                                <button
+                                    onClick={async () => {
+                                        setShowMenu(false);
+                                        if (confirm('Are you sure you want to delete this slip?')) {
+                                            try {
+                                                await deleteSlip(slip.id)
+                                                router.refresh()
+                                            } catch (error) {
+                                                console.error("Failed to delete", error)
+                                                alert('Failed to delete slip')
+                                            }
                                         }
-                                    }
-                                }} className="flex items-center gap-2 text-red-600 hover:bg-red-50">
-                                    <Trash2 size={16} />
-                                    Delete
+                                    }}
+                                    className="btn btn-ghost w-full justify-start text-red-600 hover:bg-red-50 text-base h-12"
+                                >
+                                    <Trash2 size={20} />
+                                    Delete Slip
                                 </button>
-                            </li>
-                        </ul>
-                    </div>
+
+                                <button
+                                    className="btn btn-outline w-full mt-4 rounded-xl"
+                                    onClick={() => setShowMenu(false)}
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
