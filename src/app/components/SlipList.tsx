@@ -45,15 +45,21 @@ export default function SlipList({ slips }: SlipListProps) {
     }
 
     const SlipMenu = ({ slip }: { slip: SlipWithRelations }) => (
-        <div className="dropdown dropdown-end">
+        <div className="dropdown dropdown-end dropdown-left">
             <div tabIndex={0} role="button" className="btn btn-ghost btn-circle btn-sm">
                 <MoreVertical size={20} className="text-gray-400" />
             </div>
             <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow-lg bg-white rounded-box w-52 border border-gray-100">
                 <li>
                     <Link href={`/dashboard/slips/${slip.id}`} className="flex items-center gap-2 text-gray-700 hover:bg-gray-50">
+                        <Receipt size={16} />
+                        View Details
+                    </Link>
+                </li>
+                <li>
+                    <Link href={`/dashboard/edit/${slip.id}`} className="flex items-center gap-2 text-gray-700 hover:bg-gray-50">
                         <Edit size={16} />
-                        Edit / View
+                        Edit Slip
                     </Link>
                 </li>
                 <li>

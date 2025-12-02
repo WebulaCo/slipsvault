@@ -5,6 +5,8 @@ import { notFound, redirect } from "next/navigation"
 import SlipForm from "@/app/components/SlipForm"
 import { updateSlip } from "@/app/actions"
 import Link from "next/link"
+import { ChevronLeft, MoreVertical } from "lucide-react"
+import DeleteSlipButton from "@/app/components/DeleteSlipButton"
 
 interface EditSlipPageProps {
     params: Promise<{
@@ -61,29 +63,31 @@ export default async function EditSlipPage({ params }: EditSlipPageProps) {
     }
 
     return (
-        <div className="container" style={{ padding: '2rem 1rem', maxWidth: '600px' }}>
-            <div style={{ marginBottom: '2rem' }}>
-                <Link href="/dashboard" style={{ color: 'hsl(var(--muted-foreground))', textDecoration: 'none', fontSize: '0.875rem' }}>
-                    ← Back to Dashboard
+        <div className="min-h-screen bg-brand-light text-gray-900 p-4 pb-24">
+            <header className="flex items-center justify-between mb-6">
+                <Link href="/dashboard/slips" className="text-gray-900 hover:text-brand-teal">
+                    <ChevronLeft size={24} />
                 </Link>
-                <h1 style={{ marginTop: '1rem' }}>Edit Slip</h1>
+                <h1 className="text-xl font-bold text-brand-navy">Edit Slip</h1>
+                <div className="dropdown dropdown-end">
+                    <div tabIndex={0} role="button" className="btn btn-ghost btn-circle">
+                        <MoreVertical size={24} className="text-gray-900" />
+                    </div>
+                    <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow-lg bg-white rounded-box w-52 border border-gray-100">
+                        <li>
+                            <DeleteSlipButton id={slip.id} asMenuItem />
+                        </li>
+                    </ul>
+                </div>
+            </header>
+
+            <div className="max-w-2xl mx-auto">
+                <SlipForm
+                    initialData={initialData}
+                    action={updateSlip}
+                    submitLabel="Update Slip"
+                />
             </div>
-
-            <SlipForm
-                initialData={initialData}
-                action={updateSlip}
-                submitLabel="Update Slip"
-            />
-
-            {/* Hidden input to pass ID to server action */}
-            <form action={updateSlip} style={{ display: 'none' }}>
-                <input type="hidden" name="id" value={slip.id} />
-            </form>
-            {/* 
-        Wait, SlipForm uses the action passed to it. 
-        But SlipForm doesn't know about the ID unless we pass it or include it in the form.
-        I should update SlipForm to include a hidden ID input if initialData.id exists.
-      */}
         </div>
     )
 }

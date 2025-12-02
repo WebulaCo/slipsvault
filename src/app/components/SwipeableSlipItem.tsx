@@ -3,8 +3,9 @@
 import { Slip, Tag, Photo } from '@prisma/client'
 import { useState, useRef, TouchEvent } from 'react'
 import { useRouter } from 'next/navigation'
-import { Receipt, Edit, Trash2 } from 'lucide-react'
+import { Receipt, Edit, Trash2, MoreVertical } from 'lucide-react'
 import { deleteSlip } from '@/app/actions'
+import Link from 'next/link'
 
 type SlipWithRelations = Slip & {
     tags: Tag[]
@@ -129,6 +130,44 @@ export default function SwipeableSlipItem({ slip, openLightbox }: SwipeableSlipI
                             </span>
                         </div>
                     )}
+                </div>
+
+                <div className="pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+                    <div className="dropdown dropdown-end">
+                        <div tabIndex={0} role="button" className="btn btn-ghost btn-circle btn-sm">
+                            <MoreVertical size={20} className="text-gray-400" />
+                        </div>
+                        <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow-lg bg-white rounded-box w-52 border border-gray-100">
+                            <li>
+                                <Link href={`/dashboard/slips/${slip.id}`} className="flex items-center gap-2 text-gray-700 hover:bg-gray-50">
+                                    <Receipt size={16} />
+                                    View Details
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href={`/dashboard/edit/${slip.id}`} className="flex items-center gap-2 text-gray-700 hover:bg-gray-50">
+                                    <Edit size={16} />
+                                    Edit Slip
+                                </Link>
+                            </li>
+                            <li>
+                                <button onClick={async () => {
+                                    if (confirm('Are you sure you want to delete this slip?')) {
+                                        try {
+                                            await deleteSlip(slip.id)
+                                            router.refresh()
+                                        } catch (error) {
+                                            console.error("Failed to delete", error)
+                                            alert('Failed to delete slip')
+                                        }
+                                    }
+                                }} className="flex items-center gap-2 text-red-600 hover:bg-red-50">
+                                    <Trash2 size={16} />
+                                    Delete
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
