@@ -42,7 +42,7 @@ export default function SearchInput() {
                 type="text"
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
-                className="input input-bordered w-full pl-10"
+                className="input input-bordered w-full pl-10 bg-white text-gray-900 border-gray-300 placeholder-gray-500"
                 placeholder="Search slips by title, place, or tags..."
             />
             {isPending && (

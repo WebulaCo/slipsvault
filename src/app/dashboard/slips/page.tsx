@@ -91,7 +91,7 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
                 <div className="flex items-center gap-2 text-brand-teal">
                     <Link href="/dashboard" className="flex items-center gap-1 font-medium">
                         <ChevronLeft size={20} />
-                        Dashboard
+                        <span className="hidden sm:inline">Dashboard</span>
                     </Link>
                 </div>
                 <h1 className="text-xl font-bold text-brand-navy">All Slips</h1>

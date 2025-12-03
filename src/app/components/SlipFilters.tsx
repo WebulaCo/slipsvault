@@ -81,7 +81,7 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
     const hasActiveFilters = dateRange !== 'all' || category !== 'all' || contributor !== 'all'
 
     return (
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-6 no-scrollbar items-center">
+        <div className="flex gap-2 flex-wrap pb-2 mb-6 items-center">
             <div className="flex items-center gap-2 text-brand-teal font-medium text-sm mr-2">
                 <Filter size={16} />
                 Filters:
@@ -95,7 +95,7 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
                         dateRange === 'this_month' ? 'Date: This Month' :
                             dateRange === 'last_month' ? 'Date: Last Month' : 'Date'}
                 </div>
-                <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52 mt-1">
+                <ul tabIndex={0} className="dropdown-content z-50 menu p-2 shadow bg-base-100 rounded-box w-52 mt-1">
                     <li><button onClick={() => updateFilters('range', 'all')} className={dateRange === 'all' ? 'active' : ''}>All Time</button></li>
                     <li><button onClick={() => updateFilters('range', 'this_month')} className={dateRange === 'this_month' ? 'active' : ''}>This Month</button></li>
                     <li><button onClick={() => updateFilters('range', 'last_month')} className={dateRange === 'last_month' ? 'active' : ''}>Last Month</button></li>
@@ -108,7 +108,7 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
                     <Tag size={14} />
                     {category === 'all' ? 'Category: All' : `Category: ${category}`}
                 </div>
-                <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52 mt-1 max-h-60 overflow-y-auto block">
+                <ul tabIndex={0} className="dropdown-content z-50 menu p-2 shadow bg-base-100 rounded-box w-52 mt-1 max-h-60 overflow-y-auto block">
                     <li><button onClick={() => updateFilters('category', 'all')} className={category === 'all' ? 'active' : ''}>All Categories</button></li>
                     {CATEGORIES.map(cat => (
                         <li key={cat}>
@@ -128,7 +128,7 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
                         {contributor === 'all' ? 'Contributor: All' :
                             `Contributor: ${companyUsers.find(u => u.id === contributor)?.name?.split(' ')[0] || 'Unknown'}`}
                     </div>
-                    <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52 mt-1 max-h-60 overflow-y-auto block">
+                    <ul tabIndex={0} className="dropdown-content z-50 menu p-2 shadow bg-base-100 rounded-box w-52 mt-1 max-h-60 overflow-y-auto block">
                         <li><button onClick={() => updateFilters('contributor', 'all')} className={contributor === 'all' ? 'active' : ''}>All Contributors</button></li>
                         {companyUsers.map(user => (
                             <li key={user.id}>
