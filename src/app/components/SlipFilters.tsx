@@ -80,77 +80,92 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
 
     const hasActiveFilters = dateRange !== 'all' || category !== 'all' || contributor !== 'all'
 
+    const [showFilters, setShowFilters] = useState(false)
+
     return (
-        <div className="flex gap-2 flex-wrap pb-2 mb-6 items-center relative z-10">
-            <div className="flex items-center gap-2 text-brand-teal font-medium text-sm mr-2">
+        <div className="mb-6 relative z-10">
+            {/* Mobile Toggle Button */}
+            <button
+                className="md:hidden btn btn-sm btn-outline w-full mb-2 flex items-center justify-center gap-2"
+                onClick={() => setShowFilters(!showFilters)}
+            >
                 <Filter size={16} />
-                Filters:
-            </div>
+                {showFilters ? 'Hide Filters' : 'Filter Slips'}
+                {hasActiveFilters && <span className="badge badge-xs badge-primary"></span>}
+            </button>
 
-            {/* Date Filter */}
-            <div className="dropdown">
-                <div tabIndex={0} role="button" className={`btn btn-sm btn-outline rounded-full font-normal normal-case ${dateRange !== 'all' ? 'btn-active bg-brand-teal text-white border-brand-teal' : ''}`}>
-                    <Calendar size={14} />
-                    {dateRange === 'all' ? 'Date: All Time' :
-                        dateRange === 'this_month' ? 'Date: This Month' :
-                            dateRange === 'last_month' ? 'Date: Last Month' : 'Date'}
+            {/* Filter Container */}
+            <div className={`${showFilters ? 'flex' : 'hidden'} md:flex gap-2 flex-wrap items-center`}>
+                <div className="hidden md:flex items-center gap-2 text-brand-teal font-medium text-sm mr-2">
+                    <Filter size={16} />
+                    Filters:
                 </div>
-                <ul tabIndex={0} className="dropdown-content z-50 menu p-2 shadow bg-white text-gray-900 rounded-box w-52 mt-1">
-                    <li><button onClick={() => updateFilters('range', 'all')} className={`hover:bg-gray-100 ${dateRange === 'all' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>All Time</button></li>
-                    <li><button onClick={() => updateFilters('range', 'this_month')} className={`hover:bg-gray-100 ${dateRange === 'this_month' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>This Month</button></li>
-                    <li><button onClick={() => updateFilters('range', 'last_month')} className={`hover:bg-gray-100 ${dateRange === 'last_month' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>Last Month</button></li>
-                </ul>
-            </div>
 
-            {/* Category Filter */}
-            <div className="dropdown">
-                <div tabIndex={0} role="button" className={`btn btn-sm btn-outline rounded-full font-normal normal-case ${category !== 'all' ? 'btn-active bg-brand-teal text-white border-brand-teal' : ''}`}>
-                    <Tag size={14} />
-                    {category === 'all' ? 'Category: All' : `Category: ${category}`}
-                </div>
-                <ul tabIndex={0} className="dropdown-content z-50 menu p-2 shadow bg-white text-gray-900 rounded-box w-52 mt-1 max-h-60 overflow-y-auto block">
-                    <li><button onClick={() => updateFilters('category', 'all')} className={`hover:bg-gray-100 ${category === 'all' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>All Categories</button></li>
-                    {CATEGORIES.map(cat => (
-                        <li key={cat}>
-                            <button onClick={() => updateFilters('category', cat)} className={`hover:bg-gray-100 ${category === cat ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>
-                                {cat}
-                            </button>
-                        </li>
-                    ))}
-                </ul>
-            </div>
-
-            {/* Contributor Filter (Company View Only) */}
-            {isCompanyView && (
+                {/* Date Filter */}
                 <div className="dropdown">
-                    <div tabIndex={0} role="button" className={`btn btn-sm btn-outline rounded-full font-normal normal-case ${contributor !== 'all' ? 'btn-active bg-brand-teal text-white border-brand-teal' : ''}`}>
-                        <User size={14} />
-                        {contributor === 'all' ? 'Contributor: All' :
-                            `Contributor: ${companyUsers.find(u => u.id === contributor)?.name?.split(' ')[0] || 'Unknown'}`}
+                    <div tabIndex={0} role="button" className={`btn btn-sm btn-outline rounded-full font-normal normal-case ${dateRange !== 'all' ? 'btn-active bg-brand-teal text-white border-brand-teal' : ''}`}>
+                        <Calendar size={14} />
+                        {dateRange === 'all' ? 'Date: All Time' :
+                            dateRange === 'this_month' ? 'Date: This Month' :
+                                dateRange === 'last_month' ? 'Date: Last Month' : 'Date'}
+                    </div>
+                    <ul tabIndex={0} className="dropdown-content z-50 menu p-2 shadow bg-white text-gray-900 rounded-box w-52 mt-1">
+                        <li><button onClick={() => updateFilters('range', 'all')} className={`hover:bg-gray-100 ${dateRange === 'all' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>All Time</button></li>
+                        <li><button onClick={() => updateFilters('range', 'this_month')} className={`hover:bg-gray-100 ${dateRange === 'this_month' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>This Month</button></li>
+                        <li><button onClick={() => updateFilters('range', 'last_month')} className={`hover:bg-gray-100 ${dateRange === 'last_month' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>Last Month</button></li>
+                    </ul>
+                </div>
+
+                {/* Category Filter */}
+                <div className="dropdown">
+                    <div tabIndex={0} role="button" className={`btn btn-sm btn-outline rounded-full font-normal normal-case ${category !== 'all' ? 'btn-active bg-brand-teal text-white border-brand-teal' : ''}`}>
+                        <Tag size={14} />
+                        {category === 'all' ? 'Category: All' : `Category: ${category}`}
                     </div>
                     <ul tabIndex={0} className="dropdown-content z-50 menu p-2 shadow bg-white text-gray-900 rounded-box w-52 mt-1 max-h-60 overflow-y-auto block">
-                        <li><button onClick={() => updateFilters('contributor', 'all')} className={`hover:bg-gray-100 ${contributor === 'all' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>All Contributors</button></li>
-                        {companyUsers.map(user => (
-                            <li key={user.id}>
-                                <button onClick={() => updateFilters('contributor', user.id)} className={`hover:bg-gray-100 ${contributor === user.id ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>
-                                    {user.name || user.email}
+                        <li><button onClick={() => updateFilters('category', 'all')} className={`hover:bg-gray-100 ${category === 'all' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>All Categories</button></li>
+                        {CATEGORIES.map(cat => (
+                            <li key={cat}>
+                                <button onClick={() => updateFilters('category', cat)} className={`hover:bg-gray-100 ${category === cat ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>
+                                    {cat}
                                 </button>
                             </li>
                         ))}
                     </ul>
                 </div>
-            )}
 
-            {/* Clear Filters */}
-            {hasActiveFilters && (
-                <button
-                    onClick={clearAllFilters}
-                    className="btn btn-sm btn-ghost btn-circle text-gray-500 hover:text-red-500"
-                    title="Clear all filters"
-                >
-                    <X size={16} />
-                </button>
-            )}
+                {/* Contributor Filter (Company View Only) */}
+                {isCompanyView && (
+                    <div className="dropdown">
+                        <div tabIndex={0} role="button" className={`btn btn-sm btn-outline rounded-full font-normal normal-case ${contributor !== 'all' ? 'btn-active bg-brand-teal text-white border-brand-teal' : ''}`}>
+                            <User size={14} />
+                            {contributor === 'all' ? 'Contributor: All' :
+                                `Contributor: ${companyUsers.find(u => u.id === contributor)?.name?.split(' ')[0] || 'Unknown'}`}
+                        </div>
+                        <ul tabIndex={0} className="dropdown-content z-50 menu p-2 shadow bg-white text-gray-900 rounded-box w-52 mt-1 max-h-60 overflow-y-auto block">
+                            <li><button onClick={() => updateFilters('contributor', 'all')} className={`hover:bg-gray-100 ${contributor === 'all' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>All Contributors</button></li>
+                            {companyUsers.map(user => (
+                                <li key={user.id}>
+                                    <button onClick={() => updateFilters('contributor', user.id)} className={`hover:bg-gray-100 ${contributor === user.id ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>
+                                        {user.name || user.email}
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+
+                {/* Clear Filters */}
+                {hasActiveFilters && (
+                    <button
+                        onClick={clearAllFilters}
+                        className="btn btn-sm btn-ghost btn-circle text-gray-500 hover:text-red-500"
+                        title="Clear all filters"
+                    >
+                        <X size={16} />
+                    </button>
+                )}
+            </div>
         </div>
     )
 }
