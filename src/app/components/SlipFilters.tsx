@@ -44,6 +44,18 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
         }
     }, [searchParams])
 
+    const isMobileFiltersOpen = searchParams.get('mobile_filters') === 'true'
+
+    const toggleMobileFilters = (open: boolean) => {
+        const params = new URLSearchParams(window.location.search)
+        if (open) {
+            params.set('mobile_filters', 'true')
+        } else {
+            params.delete('mobile_filters')
+        }
+        router.replace(`${pathname}?${params.toString()}`)
+    }
+
     const updateFilters = (key: string, value: string) => {
         const params = new URLSearchParams(window.location.search)
 
@@ -89,6 +101,11 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
             }
         }
 
+        // Keep mobile filters open if they are currently open
+        if (isMobileFiltersOpen) {
+            params.set('mobile_filters', 'true')
+        }
+
         router.replace(`${pathname}?${params.toString()}`)
     }
 
@@ -104,8 +121,11 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
         if (startDate) params.set('start', new Date(startDate).toISOString())
         if (endDate) params.set('end', new Date(endDate).toISOString())
 
+        // Keep mobile filters open? Or close them? User usually expects close on apply.
+        // Let's close them for better UX after applying a specific range.
+        params.delete('mobile_filters')
+
         router.replace(`${pathname}?${params.toString()}`)
-        setShowFilters(false)
     }
 
     const clearAllFilters = () => {
@@ -117,19 +137,23 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
         params.delete('contributor')
         setStartDate('')
         setEndDate('')
+
+        // Keep open to show cleared state? Or close? Let's keep open.
+        if (isMobileFiltersOpen) {
+            params.set('mobile_filters', 'true')
+        }
+
         router.replace(`${pathname}?${params.toString()}`)
     }
 
     const hasActiveFilters = dateRange !== 'all' || category !== 'all' || contributor !== 'all'
-
-    const [showFilters, setShowFilters] = useState(false)
 
     return (
         <div className="mb-6 relative">
             {/* Mobile Toggle Button */}
             <button
                 className="md:hidden btn btn-sm btn-outline rounded-full w-full mb-2 flex items-center justify-center gap-2"
-                onClick={() => setShowFilters(true)}
+                onClick={() => toggleMobileFilters(true)}
             >
                 <Filter size={16} />
                 Filter Slips
@@ -138,8 +162,8 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
 
             {/* Filter Container */}
             <div className={`
-                ${showFilters ? 'fixed inset-0 z-[60] bg-white p-4 flex flex-col items-start overflow-y-auto' : 'hidden'} 
-                md:flex md:static md:bg-transparent md:p-0 md:flex-row md:items-center md:overflow-visible 
+                ${isMobileFiltersOpen ? 'fixed inset-0 z-[60] bg-white p-4 flex flex-col items-start overflow-y-auto' : 'hidden'}
+                md:flex md:static md:bg-transparent md:p-0 md:flex-row md:items-center md:overflow-visible
                 gap-2 flex-wrap
             `}>
                 {/* Mobile Header (Close Button) */}
@@ -148,7 +172,7 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
                         <Filter size={20} />
                         Filters
                     </h3>
-                    <button onClick={() => setShowFilters(false)} className="btn btn-ghost btn-circle btn-sm">
+                    <button onClick={() => toggleMobileFilters(false)} className="btn btn-ghost btn-circle btn-sm">
                         <X size={24} />
                     </button>
                 </div>
@@ -159,85 +183,182 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
                 </div>
 
                 {/* Date Filter */}
-                <div className="dropdown w-full md:w-auto mb-2 md:mb-0">
-                    <button type="button" tabIndex={0} className={`btn btn-sm btn-outline rounded-full font-normal normal-case w-full md:w-auto justify-start md:justify-center ${dateRange !== 'all' ? 'btn-active bg-brand-teal text-white border-brand-teal' : ''}`}>
-                        <Calendar size={14} />
-                        {dateRange === 'all' ? 'Date: All Time' :
-                            dateRange === 'this_month' ? 'Date: This Month' :
-                                dateRange === 'last_month' ? 'Date: Last Month' :
-                                    dateRange === 'custom' ? 'Date: Custom' : 'Date'}
-                    </button>
-                    <div tabIndex={0} className="dropdown-content z-[70] menu p-2 shadow bg-white text-gray-900 rounded-box w-full md:w-72 mt-1">
-                        <ul className="menu p-0">
-                            <li><button type="button" onClick={() => { updateFilters('range', 'all'); setShowFilters(false); }} className={`hover:bg-gray-100 ${dateRange === 'all' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>All Time</button></li>
-                            <li><button type="button" onClick={() => { updateFilters('range', 'this_month'); setShowFilters(false); }} className={`hover:bg-gray-100 ${dateRange === 'this_month' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>This Month</button></li>
-                            <li><button type="button" onClick={() => { updateFilters('range', 'last_month'); setShowFilters(false); }} className={`hover:bg-gray-100 ${dateRange === 'last_month' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>Last Month</button></li>
-                            <li><button type="button" onClick={() => updateFilters('range', 'custom')} className={`hover:bg-gray-100 ${dateRange === 'custom' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>Custom Range</button></li>
-                        </ul>
-                        {dateRange === 'custom' && (
-                            <div className="p-2 border-t border-gray-100 mt-2">
-                                <div className="grid grid-cols-2 gap-2 mb-2">
-                                    <div>
-                                        <label className="text-xs text-gray-500 block mb-1">Start</label>
-                                        <input
-                                            type="date"
-                                            className="input input-xs input-bordered w-full bg-white text-gray-900"
-                                            value={startDate ? new Date(startDate).toISOString().split('T')[0] : ''}
-                                            onChange={(e) => handleCustomDateChange('start', e.target.value)}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs text-gray-500 block mb-1">End</label>
-                                        <input
-                                            type="date"
-                                            className="input input-xs input-bordered w-full bg-white text-gray-900"
-                                            value={endDate ? new Date(endDate).toISOString().split('T')[0] : ''}
-                                            onChange={(e) => handleCustomDateChange('end', e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-                                <button onClick={applyCustomDate} className="btn btn-xs btn-primary w-full text-white">Apply Range</button>
+                <div className={`w-full md:w-auto mb-2 md:mb-0 ${isMobileFiltersOpen ? '' : 'dropdown'}`}>
+                    {isMobileFiltersOpen ? (
+                        <div className="collapse collapse-arrow border border-gray-200 rounded-box">
+                            <input type="checkbox" />
+                            <div className="collapse-title font-medium flex items-center gap-2">
+                                <Calendar size={14} />
+                                {dateRange === 'all' ? 'Date: All Time' :
+                                    dateRange === 'this_month' ? 'Date: This Month' :
+                                        dateRange === 'last_month' ? 'Date: Last Month' :
+                                            dateRange === 'custom' ? 'Date: Custom' : 'Date'}
                             </div>
-                        )}
-                    </div>
+                            <div className="collapse-content">
+                                <ul className="menu p-0">
+                                    <li><button type="button" onClick={() => updateFilters('range', 'all')} className={dateRange === 'all' ? 'active' : ''}>All Time</button></li>
+                                    <li><button type="button" onClick={() => updateFilters('range', 'this_month')} className={dateRange === 'this_month' ? 'active' : ''}>This Month</button></li>
+                                    <li><button type="button" onClick={() => updateFilters('range', 'last_month')} className={dateRange === 'last_month' ? 'active' : ''}>Last Month</button></li>
+                                    <li><button type="button" onClick={() => updateFilters('range', 'custom')} className={dateRange === 'custom' ? 'active' : ''}>Custom Range</button></li>
+                                </ul>
+                                {dateRange === 'custom' && (
+                                    <div className="pt-2 border-t border-gray-100 mt-2">
+                                        <div className="grid grid-cols-2 gap-2 mb-2">
+                                            <div>
+                                                <label className="text-xs text-gray-500 block mb-1">Start</label>
+                                                <input
+                                                    type="date"
+                                                    className="input input-xs input-bordered w-full bg-white text-gray-900"
+                                                    value={startDate ? new Date(startDate).toISOString().split('T')[0] : ''}
+                                                    onChange={(e) => handleCustomDateChange('start', e.target.value)}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-gray-500 block mb-1">End</label>
+                                                <input
+                                                    type="date"
+                                                    className="input input-xs input-bordered w-full bg-white text-gray-900"
+                                                    value={endDate ? new Date(endDate).toISOString().split('T')[0] : ''}
+                                                    onChange={(e) => handleCustomDateChange('end', e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                        <button onClick={applyCustomDate} className="btn btn-xs btn-primary w-full text-white">Apply Range</button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <button type="button" tabIndex={0} className={`btn btn-sm btn-outline rounded-full font-normal normal-case w-full md:w-auto justify-start md:justify-center ${dateRange !== 'all' ? 'btn-active bg-brand-teal text-white border-brand-teal' : ''}`}>
+                                <Calendar size={14} />
+                                {dateRange === 'all' ? 'Date: All Time' :
+                                    dateRange === 'this_month' ? 'Date: This Month' :
+                                        dateRange === 'last_month' ? 'Date: Last Month' :
+                                            dateRange === 'custom' ? 'Date: Custom' : 'Date'}
+                            </button>
+                            <div tabIndex={0} className="dropdown-content z-[70] menu p-2 shadow bg-white text-gray-900 rounded-box w-full md:w-72 mt-1">
+                                <ul className="menu p-0">
+                                    <li><button type="button" onClick={() => { updateFilters('range', 'all'); }} className={`hover:bg-gray-100 ${dateRange === 'all' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>All Time</button></li>
+                                    <li><button type="button" onClick={() => { updateFilters('range', 'this_month'); }} className={`hover:bg-gray-100 ${dateRange === 'this_month' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>This Month</button></li>
+                                    <li><button type="button" onClick={() => { updateFilters('range', 'last_month'); }} className={`hover:bg-gray-100 ${dateRange === 'last_month' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>Last Month</button></li>
+                                    <li><button type="button" onClick={() => updateFilters('range', 'custom')} className={`hover:bg-gray-100 ${dateRange === 'custom' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>Custom Range</button></li>
+                                </ul>
+                                {dateRange === 'custom' && (
+                                    <div className="p-2 border-t border-gray-100 mt-2">
+                                        <div className="grid grid-cols-2 gap-2 mb-2">
+                                            <div>
+                                                <label className="text-xs text-gray-500 block mb-1">Start</label>
+                                                <input
+                                                    type="date"
+                                                    className="input input-xs input-bordered w-full bg-white text-gray-900"
+                                                    value={startDate ? new Date(startDate).toISOString().split('T')[0] : ''}
+                                                    onChange={(e) => handleCustomDateChange('start', e.target.value)}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-gray-500 block mb-1">End</label>
+                                                <input
+                                                    type="date"
+                                                    className="input input-xs input-bordered w-full bg-white text-gray-900"
+                                                    value={endDate ? new Date(endDate).toISOString().split('T')[0] : ''}
+                                                    onChange={(e) => handleCustomDateChange('end', e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                        <button onClick={applyCustomDate} className="btn btn-xs btn-primary w-full text-white">Apply Range</button>
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {/* Category Filter */}
-                <div className="dropdown w-full md:w-auto mb-2 md:mb-0">
-                    <button type="button" tabIndex={0} className={`btn btn-sm btn-outline rounded-full font-normal normal-case w-full md:w-auto justify-start md:justify-center ${category !== 'all' ? 'btn-active bg-brand-teal text-white border-brand-teal' : ''}`}>
-                        <Tag size={14} />
-                        {category === 'all' ? 'Category: All' : `Category: ${category}`}
-                    </button>
-                    <ul tabIndex={0} className="dropdown-content z-[70] menu p-2 shadow bg-white text-gray-900 rounded-box w-full md:w-52 mt-1 max-h-60 overflow-y-auto block">
-                        <li><button type="button" onClick={() => { updateFilters('category', 'all'); setShowFilters(false); }} className={`hover:bg-gray-100 ${category === 'all' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>All Categories</button></li>
-                        {CATEGORIES.map(cat => (
-                            <li key={cat}>
-                                <button type="button" onClick={() => { updateFilters('category', cat); setShowFilters(false); }} className={`hover:bg-gray-100 ${category === cat ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>
-                                    {cat}
-                                </button>
-                            </li>
-                        ))}
-                    </ul>
+                <div className={`w-full md:w-auto mb-2 md:mb-0 ${isMobileFiltersOpen ? '' : 'dropdown'}`}>
+                    {isMobileFiltersOpen ? (
+                        <div className="collapse collapse-arrow border border-gray-200 rounded-box">
+                            <input type="checkbox" />
+                            <div className="collapse-title font-medium flex items-center gap-2">
+                                <Tag size={14} />
+                                {category === 'all' ? 'Category: All' : `Category: ${category}`}
+                            </div>
+                            <div className="collapse-content">
+                                <ul className="menu p-0 max-h-60 overflow-y-auto">
+                                    <li><button type="button" onClick={() => updateFilters('category', 'all')} className={category === 'all' ? 'active' : ''}>All Categories</button></li>
+                                    {CATEGORIES.map(cat => (
+                                        <li key={cat}>
+                                            <button type="button" onClick={() => updateFilters('category', cat)} className={category === cat ? 'active' : ''}>
+                                                {cat}
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <button type="button" tabIndex={0} className={`btn btn-sm btn-outline rounded-full font-normal normal-case w-full md:w-auto justify-start md:justify-center ${category !== 'all' ? 'btn-active bg-brand-teal text-white border-brand-teal' : ''}`}>
+                                <Tag size={14} />
+                                {category === 'all' ? 'Category: All' : `Category: ${category}`}
+                            </button>
+                            <ul tabIndex={0} className="dropdown-content z-[70] menu p-2 shadow bg-white text-gray-900 rounded-box w-full md:w-52 mt-1 max-h-60 overflow-y-auto block">
+                                <li><button type="button" onClick={() => { updateFilters('category', 'all'); }} className={`hover:bg-gray-100 ${category === 'all' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>All Categories</button></li>
+                                {CATEGORIES.map(cat => (
+                                    <li key={cat}>
+                                        <button type="button" onClick={() => { updateFilters('category', cat); }} className={`hover:bg-gray-100 ${category === cat ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>
+                                            {cat}
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </>
+                    )}
                 </div>
 
                 {/* Contributor Filter (Company View Only) */}
                 {isCompanyView && (
-                    <div className="dropdown w-full md:w-auto mb-2 md:mb-0">
-                        <button type="button" tabIndex={0} className={`btn btn-sm btn-outline rounded-full font-normal normal-case w-full md:w-auto justify-start md:justify-center ${contributor !== 'all' ? 'btn-active bg-brand-teal text-white border-brand-teal' : ''}`}>
-                            <User size={14} />
-                            {contributor === 'all' ? 'Contributor: All' :
-                                `Contributor: ${companyUsers.find(u => u.id === contributor)?.name?.split(' ')[0] || 'Unknown'}`}
-                        </button>
-                        <ul tabIndex={0} className="dropdown-content z-[70] menu p-2 shadow bg-white text-gray-900 rounded-box w-full md:w-52 mt-1 max-h-60 overflow-y-auto block">
-                            <li><button type="button" onClick={() => { updateFilters('contributor', 'all'); setShowFilters(false); }} className={`hover:bg-gray-100 ${contributor === 'all' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>All Contributors</button></li>
-                            {companyUsers.map(user => (
-                                <li key={user.id}>
-                                    <button type="button" onClick={() => { updateFilters('contributor', user.id); setShowFilters(false); }} className={`hover:bg-gray-100 ${contributor === user.id ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>
-                                        {user.name || user.email}
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
+                    <div className={`w-full md:w-auto mb-2 md:mb-0 ${isMobileFiltersOpen ? '' : 'dropdown'}`}>
+                        {isMobileFiltersOpen ? (
+                            <div className="collapse collapse-arrow border border-gray-200 rounded-box">
+                                <input type="checkbox" />
+                                <div className="collapse-title font-medium flex items-center gap-2">
+                                    <User size={14} />
+                                    {contributor === 'all' ? 'Contributor: All' :
+                                        `Contributor: ${companyUsers.find(u => u.id === contributor)?.name?.split(' ')[0] || 'Unknown'}`}
+                                </div>
+                                <div className="collapse-content">
+                                    <ul className="menu p-0 max-h-60 overflow-y-auto">
+                                        <li><button type="button" onClick={() => updateFilters('contributor', 'all')} className={contributor === 'all' ? 'active' : ''}>All Contributors</button></li>
+                                        {companyUsers.map(user => (
+                                            <li key={user.id}>
+                                                <button type="button" onClick={() => updateFilters('contributor', user.id)} className={contributor === user.id ? 'active' : ''}>
+                                                    {user.name || user.email}
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <button type="button" tabIndex={0} className={`btn btn-sm btn-outline rounded-full font-normal normal-case w-full md:w-auto justify-start md:justify-center ${contributor !== 'all' ? 'btn-active bg-brand-teal text-white border-brand-teal' : ''}`}>
+                                    <User size={14} />
+                                    {contributor === 'all' ? 'Contributor: All' :
+                                        `Contributor: ${companyUsers.find(u => u.id === contributor)?.name?.split(' ')[0] || 'Unknown'}`}
+                                </button>
+                                <ul tabIndex={0} className="dropdown-content z-[70] menu p-2 shadow bg-white text-gray-900 rounded-box w-full md:w-52 mt-1 max-h-60 overflow-y-auto block">
+                                    <li><button type="button" onClick={() => { updateFilters('contributor', 'all'); }} className={`hover:bg-gray-100 ${contributor === 'all' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>All Contributors</button></li>
+                                    {companyUsers.map(user => (
+                                        <li key={user.id}>
+                                            <button type="button" onClick={() => { updateFilters('contributor', user.id); }} className={`hover:bg-gray-100 ${contributor === user.id ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>
+                                                {user.name || user.email}
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </>
+                        )}
                     </div>
                 )}
 
