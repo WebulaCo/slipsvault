@@ -48,7 +48,7 @@ export default function Sidebar({ user, tags, unreadNotificationsCount = 0 }: Si
 
             <aside
                 className={`
-                    fixed top-0 left-0 h-screen bg-base-200 border-r border-base-300 z-50
+                    fixed top-0 left-0 h-screen bg-white border-r border-gray-200 z-50
                     w-80 p-4 flex flex-col transition-transform duration-300 ease-in-out
                     ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
                 `}
@@ -67,14 +67,14 @@ export default function Sidebar({ user, tags, unreadNotificationsCount = 0 }: Si
 
                 <Link
                     href="/dashboard/create"
-                    className="btn btn-primary w-full mb-6"
+                    className="btn bg-brand-navy hover:bg-brand-navy-hover text-white w-full mb-6 border-none"
                     onClick={() => setIsOpen(false)}
                 >
                     <PlusCircle size={20} />
                     Upload New Slip
                 </Link>
 
-                <ul className="menu bg-base-200 w-full p-0 gap-1">
+                <ul className="menu bg-white w-full p-0 gap-1">
                     {navItems.map((item) => {
                         const isActive = pathname === item.href
                         return (
@@ -82,14 +82,14 @@ export default function Sidebar({ user, tags, unreadNotificationsCount = 0 }: Si
                                 <Link
                                     href={item.href}
                                     onClick={() => setIsOpen(false)}
-                                    className={`${isActive ? 'active' : ''} flex justify-between`}
+                                    className={`${isActive ? 'bg-brand-navy text-white hover:bg-brand-navy-hover' : 'text-gray-700 hover:bg-gray-100'} flex justify-between`}
                                 >
                                     <div className="flex items-center gap-2">
                                         <item.icon size={20} />
                                         {item.name}
                                     </div>
                                     {item.name === 'Notifications' && unreadNotificationsCount > 0 && (
-                                        <span className="badge badge-sm badge-error text-white">
+                                        <span className={`badge badge-sm ${isActive ? 'badge-error text-white' : 'badge-error text-white'}`}>
                                             {unreadNotificationsCount}
                                         </span>
                                     )}
@@ -101,15 +101,16 @@ export default function Sidebar({ user, tags, unreadNotificationsCount = 0 }: Si
 
                 {tags.length > 0 && (
                     <div className="mt-8 flex-1 overflow-y-auto">
-                        <h3 className="px-4 text-xs font-bold text-base-content/50 uppercase tracking-wider mb-2">
+                        <h3 className="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
                             Tags
                         </h3>
-                        <ul className="menu bg-base-200 w-full p-0 gap-1 menu-sm">
+                        <ul className="menu bg-white w-full p-0 gap-1 menu-sm">
                             {tags.map((tag) => (
                                 <li key={tag.id}>
                                     <Link
                                         href={`/dashboard/slips?tag=${encodeURIComponent(tag.name)}`}
                                         onClick={() => setIsOpen(false)}
+                                        className="text-gray-600 hover:bg-gray-100 hover:text-brand-navy"
                                     >
                                         <Hash size={16} />
                                         {tag.name}
@@ -120,18 +121,18 @@ export default function Sidebar({ user, tags, unreadNotificationsCount = 0 }: Si
                     </div>
                 )}
 
-                <div className="border-t border-base-300 pt-4 mt-auto">
-                    <Link href="/dashboard/settings" className="flex items-center gap-3 mb-4 px-2 hover:bg-base-300 rounded-lg py-2 transition-colors">
+                <div className="border-t border-gray-200 pt-4 mt-auto">
+                    <Link href="/dashboard/settings" className="flex items-center gap-3 mb-4 px-2 hover:bg-gray-100 rounded-lg py-2 transition-colors">
                         <div className="avatar placeholder">
-                            <div className="bg-neutral text-neutral-content rounded-full w-10">
+                            <div className="bg-brand-teal text-white rounded-full w-10">
                                 <span className="text-xs">{user.name?.[0] || 'U'}</span>
                             </div>
                         </div>
                         <div className="flex-1 overflow-hidden">
-                            <p className="font-semibold truncate">
+                            <p className="font-semibold truncate text-gray-900">
                                 {user.name || 'User'}
                             </p>
-                            <p className="text-xs text-base-content/70 truncate">
+                            <p className="text-xs text-gray-500 truncate">
                                 {user.email}
                             </p>
                         </div>
@@ -139,7 +140,7 @@ export default function Sidebar({ user, tags, unreadNotificationsCount = 0 }: Si
 
                     <button
                         onClick={() => signOut()}
-                        className="btn btn-ghost btn-sm w-full justify-start gap-3 text-base-content/70 hover:text-error"
+                        className="btn btn-ghost btn-sm w-full justify-start gap-3 text-gray-500 hover:text-red-600 hover:bg-red-50"
                     >
                         <LogOut size={18} />
                         Logout

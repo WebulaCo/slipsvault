@@ -1,5 +1,4 @@
 import Sidebar from '@/app/components/Sidebar'
-import MobileNav from '@/app/components/MobileNav'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
@@ -47,8 +46,7 @@ export default async function DashboardLayout({
                 </div>
             </main>
 
-            {/* Mobile Bottom Nav */}
-            <MobileNav unreadNotificationsCount={unreadNotificationsCount} />
+            {/* Mobile Bottom Nav - Removed as per user request */}
         </div>
     )
 }
