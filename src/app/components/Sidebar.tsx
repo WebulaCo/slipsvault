@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, Receipt, Search, Settings, LogOut, PlusCircle, Hash, Menu, X, Bell } from 'lucide-react'
 import { signOut } from 'next-auth/react'
+import Logo from './Logo'
 
 interface SidebarProps {
     user: { name?: string | null, email?: string | null }
@@ -47,10 +48,7 @@ export default function Sidebar({ user, tags, unreadNotificationsCount = 0 }: Si
                 `}
             >
                 <div className="flex items-center gap-3 mb-8 px-2">
-                    <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-primary-content font-bold text-xl">
-                        SV
-                    </div>
-                    <span className="text-xl font-bold">SlipsVault</span>
+                    <Logo showText={true} size={32} />
                     <button
                         className="btn btn-square btn-ghost btn-sm ml-auto md:hidden"
                         onClick={() => setIsOpen(false)}

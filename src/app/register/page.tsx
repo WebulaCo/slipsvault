@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { registerUser } from '@/app/actions'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import Logo from '../components/Logo'
 
 export default function RegisterPage() {
     const [loading, setLoading] = useState(false)
@@ -36,6 +37,9 @@ export default function RegisterPage() {
         <div className="min-h-screen flex items-center justify-center bg-brand-light p-4">
             <div className="card w-full max-w-md bg-white shadow-xl border border-gray-100">
                 <div className="card-body">
+                    <div className="flex justify-center mb-4">
+                        <Logo showText={true} showSlogan={true} size={60} />
+                    </div>
                     <h1 className="text-2xl font-bold text-center mb-6 text-brand-navy">Create Account</h1>
 
                     <form onSubmit={handleSubmit} className="space-y-4">

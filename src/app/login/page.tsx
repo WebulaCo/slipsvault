@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Logo from '../components/Logo'
 
 export default function LoginPage() {
     const router = useRouter()
@@ -41,7 +42,9 @@ export default function LoginPage() {
         <div className="min-h-screen flex items-center justify-center bg-brand-light p-4">
             <div className="card w-full max-w-md bg-white shadow-xl border border-gray-100">
                 <div className="card-body">
-                    <h1 className="text-3xl font-bold text-center mb-2 text-brand-navy">Slips Vault</h1>
+                    <div className="flex justify-center mb-4">
+                        <Logo showText={true} showSlogan={true} size={60} />
+                    </div>
                     <p className="text-center text-gray-500 mb-6">Welcome back! Please login to your account.</p>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
