@@ -94,6 +94,65 @@ export default function SlipList({ slips }: SlipListProps) {
             .slice(0, 2)
     }
 
+    const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null)
+
+    const handleSort = (key: string) => {
+        let direction: 'asc' | 'desc' = 'asc'
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc'
+        }
+        setSortConfig({ key, direction })
+    }
+
+    const sortedSlips = [...slips].sort((a, b) => {
+        if (!sortConfig) return 0
+
+        let aValue: any = a
+        let bValue: any = b
+
+        switch (sortConfig.key) {
+            case 'date':
+                aValue = a.date ? new Date(a.date).getTime() : 0
+                bValue = b.date ? new Date(b.date).getTime() : 0
+                break
+            case 'uploaded':
+                aValue = new Date(a.createdAt).getTime()
+                bValue = new Date(b.createdAt).getTime()
+                break
+            case 'user':
+                aValue = (a.user.name || a.user.email).toLowerCase()
+                bValue = (b.user.name || b.user.email).toLowerCase()
+                break
+            case 'title':
+                aValue = a.title.toLowerCase()
+                bValue = b.title.toLowerCase()
+                break
+            case 'amount':
+                aValue = a.amountAfterTax || 0
+                bValue = b.amountAfterTax || 0
+                break
+            case 'place':
+                aValue = (a.place || '').toLowerCase()
+                bValue = (b.place || '').toLowerCase()
+                break
+            default:
+                return 0
+        }
+
+        if (aValue < bValue) {
+            return sortConfig.direction === 'asc' ? -1 : 1
+        }
+        if (aValue > bValue) {
+            return sortConfig.direction === 'asc' ? 1 : -1
+        }
+        return 0
+    })
+
+    const SortIcon = ({ columnKey }: { columnKey: string }) => {
+        if (sortConfig?.key !== columnKey) return <span className="ml-1 text-gray-300">↕</span>
+        return <span className="ml-1 text-brand-teal">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+    }
+
     if (slips.length === 0) {
         return (
             <div className="card border-2 border-dashed border-base-300 p-16 text-center">
@@ -114,7 +173,7 @@ export default function SlipList({ slips }: SlipListProps) {
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 relative">
             <div className="md:hidden">
-                {slips.map((slip) => (
+                {sortedSlips.map((slip) => (
                     <SwipeableSlipItem
                         key={slip.id}
                         slip={slip}
@@ -127,31 +186,40 @@ export default function SlipList({ slips }: SlipListProps) {
                 <table className="table table-zebra w-full">
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>Uploaded</th>
-                            <th>User</th>
-                            <th>Title / Merchant</th>
-                            <th>Amount</th>
-                            <th>Place</th>
+                            <th className="cursor-pointer hover:bg-gray-50" onClick={() => handleSort('date')}>
+                                Date <SortIcon columnKey="date" />
+                            </th>
+                            <th className="cursor-pointer hover:bg-gray-50" onClick={() => handleSort('uploaded')}>
+                                Uploaded <SortIcon columnKey="uploaded" />
+                            </th>
+                            <th className="cursor-pointer hover:bg-gray-50" onClick={() => handleSort('user')}>
+                                User <SortIcon columnKey="user" />
+                            </th>
+                            <th className="cursor-pointer hover:bg-gray-50" onClick={() => handleSort('title')}>
+                                Title / Merchant <SortIcon columnKey="title" />
+                            </th>
+                            <th className="cursor-pointer hover:bg-gray-50" onClick={() => handleSort('amount')}>
+                                Amount <SortIcon columnKey="amount" />
+                            </th>
+                            <th className="cursor-pointer hover:bg-gray-50" onClick={() => handleSort('place')}>
+                                Place <SortIcon columnKey="place" />
+                            </th>
                             <th>Tags</th>
                             <th className="text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {slips.map((slip) => (
+                        {sortedSlips.map((slip) => (
                             <tr
                                 key={slip.id}
                                 className="hover cursor-pointer"
                                 onClick={() => router.push(`/dashboard/slips/${slip.id}`)}
                             >
                                 <td className="whitespace-nowrap font-mono text-sm">
-                                    {slip.date ? new Date(slip.date).toLocaleDateString() : '-'}
+                                    {slip.date ? new Date(slip.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '-'}
                                 </td>
                                 <td className="whitespace-nowrap text-xs text-gray-500">
-                                    {new Date(slip.createdAt).toLocaleString(undefined, {
-                                        dateStyle: 'short',
-                                        timeStyle: 'short'
-                                    })}
+                                    {new Date(slip.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })}, {new Date(slip.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                                 </td>
                                 <td>
                                     <div className="tooltip" data-tip={slip.user.name || slip.user.email}>
