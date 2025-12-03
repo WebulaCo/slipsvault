@@ -27,16 +27,25 @@ export default function Sidebar({ user, tags, unreadNotificationsCount = 0 }: Si
     return (
         <>
             {/* Mobile Header */}
+            {/* Mobile Header */}
             <div className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-[60] md:hidden flex items-center px-4 justify-between">
                 <Link href="/dashboard" className="block">
                     <Logo showText={true} size={32} />
                 </Link>
-                <button
-                    className="btn btn-square btn-ghost"
-                    onClick={() => setIsOpen(!isOpen)}
-                >
-                    <Menu size={24} />
-                </button>
+                <div className="flex items-center gap-2">
+                    <Link href="/dashboard/notifications" className="btn btn-square btn-ghost relative">
+                        <Bell size={24} />
+                        {unreadNotificationsCount > 0 && (
+                            <span className="absolute top-3 right-3 h-2 w-2 bg-red-500 rounded-full ring-2 ring-white"></span>
+                        )}
+                    </Link>
+                    <button
+                        className="btn btn-square btn-ghost"
+                        onClick={() => setIsOpen(!isOpen)}
+                    >
+                        <Menu size={24} />
+                    </button>
+                </div>
             </div>
 
             {isOpen && (
