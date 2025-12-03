@@ -81,7 +81,7 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
     const hasActiveFilters = dateRange !== 'all' || category !== 'all' || contributor !== 'all'
 
     return (
-        <div className="flex gap-2 flex-wrap pb-2 mb-6 items-center">
+        <div className="flex gap-2 flex-wrap pb-2 mb-6 items-center relative z-10">
             <div className="flex items-center gap-2 text-brand-teal font-medium text-sm mr-2">
                 <Filter size={16} />
                 Filters:

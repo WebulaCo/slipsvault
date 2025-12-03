@@ -160,7 +160,7 @@ export default async function DashboardPage() {
             {/* Floating Action Button */}
             <a
                 href="/dashboard/create"
-                className="fixed bottom-20 right-4 md:hidden w-14 h-14 bg-brand-navy rounded-full flex items-center justify-center text-white shadow-lg hover:bg-[#0d2e4d] transition-colors z-40"
+                className="fixed bottom-24 right-4 md:hidden w-14 h-14 bg-brand-navy rounded-full flex items-center justify-center text-white shadow-lg hover:bg-[#0d2e4d] transition-colors z-50"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
