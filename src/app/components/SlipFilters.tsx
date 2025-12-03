@@ -50,10 +50,9 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
         if (key === 'custom_date') {
             // Handle custom date inputs
             if (value === 'start') {
-                setStartDate(params.get('start') || '') // Keep local sync? No, value is the new date
-                // Actually, the input onChange will call this with the new value
+                setStartDate(params.get('start') || '')
             }
-            return // We'll handle this differently, see below
+            return
         }
 
         if (value === 'all') {
@@ -83,8 +82,9 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
                     params.set('start', start.toISOString())
                     params.set('end', end.toISOString())
                 } else if (value === 'custom') {
-                    // Don't set start/end yet, wait for user input
-                    // But we need to ensure 'range' is set to custom
+                    // Just update local state to show inputs, don't update URL yet
+                    setDateRange('custom')
+                    return
                 }
             }
         }
@@ -93,19 +93,19 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
     }
 
     const handleCustomDateChange = (type: 'start' | 'end', value: string) => {
+        if (type === 'start') setStartDate(value)
+        else setEndDate(value)
+    }
+
+    const applyCustomDate = () => {
         const params = new URLSearchParams(window.location.search)
         params.set('range', 'custom')
 
-        if (value) {
-            params.set(type, new Date(value).toISOString())
-        } else {
-            params.delete(type)
-        }
-
-        if (type === 'start') setStartDate(value)
-        else setEndDate(value)
+        if (startDate) params.set('start', new Date(startDate).toISOString())
+        if (endDate) params.set('end', new Date(endDate).toISOString())
 
         router.replace(`${pathname}?${params.toString()}`)
+        setShowFilters(false)
     }
 
     const clearAllFilters = () => {
@@ -175,25 +175,28 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
                             <li><button type="button" onClick={() => updateFilters('range', 'custom')} className={`hover:bg-gray-100 ${dateRange === 'custom' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>Custom Range</button></li>
                         </ul>
                         {dateRange === 'custom' && (
-                            <div className="p-2 border-t border-gray-100 mt-2 grid grid-cols-2 gap-2">
-                                <div>
-                                    <label className="text-xs text-gray-500 block mb-1">Start</label>
-                                    <input
-                                        type="date"
-                                        className="input input-xs input-bordered w-full bg-white text-gray-900"
-                                        value={startDate ? new Date(startDate).toISOString().split('T')[0] : ''}
-                                        onChange={(e) => handleCustomDateChange('start', e.target.value)}
-                                    />
+                            <div className="p-2 border-t border-gray-100 mt-2">
+                                <div className="grid grid-cols-2 gap-2 mb-2">
+                                    <div>
+                                        <label className="text-xs text-gray-500 block mb-1">Start</label>
+                                        <input
+                                            type="date"
+                                            className="input input-xs input-bordered w-full bg-white text-gray-900"
+                                            value={startDate ? new Date(startDate).toISOString().split('T')[0] : ''}
+                                            onChange={(e) => handleCustomDateChange('start', e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-500 block mb-1">End</label>
+                                        <input
+                                            type="date"
+                                            className="input input-xs input-bordered w-full bg-white text-gray-900"
+                                            value={endDate ? new Date(endDate).toISOString().split('T')[0] : ''}
+                                            onChange={(e) => handleCustomDateChange('end', e.target.value)}
+                                        />
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="text-xs text-gray-500 block mb-1">End</label>
-                                    <input
-                                        type="date"
-                                        className="input input-xs input-bordered w-full bg-white text-gray-900"
-                                        value={endDate ? new Date(endDate).toISOString().split('T')[0] : ''}
-                                        onChange={(e) => handleCustomDateChange('end', e.target.value)}
-                                    />
-                                </div>
+                                <button onClick={applyCustomDate} className="btn btn-xs btn-primary w-full text-white">Apply Range</button>
                             </div>
                         )}
                     </div>
