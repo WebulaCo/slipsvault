@@ -106,7 +106,7 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
             </div>
 
             {/* Filter Chips */}
-            <SlipFilters companyUsers={companyUsers} isCompanyView={isCompanyView || false} />
+            <SlipFilters companyUsers={companyUsers} isCompanyView={!!isCompanyView} />
 
             {/* Slips List */}
             <SlipList slips={slips} />
