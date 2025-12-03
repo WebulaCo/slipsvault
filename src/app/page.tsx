@@ -89,6 +89,10 @@ export default async function Home() {
       <footer className="bg-white border-t border-gray-100 py-8">
         <div className="container mx-auto px-6 text-center text-gray-500 text-sm">
           &copy; {new Date().getFullYear()} Slips Vault. All rights reserved.
+          <div className="mt-4 space-x-4">
+            <Link href="/privacy" className="hover:text-brand-navy transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-brand-navy transition-colors">Terms of Service</Link>
+          </div>
         </div>
       </footer>
     </div>

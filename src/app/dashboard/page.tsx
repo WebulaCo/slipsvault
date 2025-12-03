@@ -104,6 +104,55 @@ export default async function DashboardPage() {
         return valB - valA
     })
 
+    if (totalSlips === 0) {
+        return (
+            <div>
+                <header className="mb-8">
+                    <h1 className="text-2xl font-bold mb-2 text-brand-navy">
+                        Welcome to Slips Vault, {session.user.name || 'User'}!
+                    </h1>
+                    <p className="text-gray-600">Let's get your financial tracking started.</p>
+                </header>
+
+                <div className="card bg-white border-2 border-dashed border-brand-teal/20 rounded-2xl p-12 text-center max-w-2xl mx-auto shadow-sm">
+                    <div className="w-24 h-24 bg-brand-light rounded-full flex items-center justify-center mx-auto mb-6 text-brand-teal">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="12" y1="18" x2="12" y2="12"></line>
+                            <line x1="9" y1="15" x2="15" y2="15"></line>
+                        </svg>
+                    </div>
+                    <h2 className="text-xl font-bold text-brand-navy mb-3">Your vault is empty</h2>
+                    <p className="text-gray-500 mb-8 max-w-md mx-auto leading-relaxed">
+                        Upload your first slip to unlock powerful AI insights, expense tracking, and secure storage. It only takes a few seconds!
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                        <a href="/dashboard/create" className="btn bg-brand-teal hover:bg-[#2a8c8e] text-white border-none px-8 py-3 h-auto rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                            Upload First Slip
+                        </a>
+                    </div>
+
+                    <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+                        <div className="p-4 bg-gray-50 rounded-lg">
+                            <div className="font-bold text-brand-navy mb-1">📸 Snap & Store</div>
+                            <div className="text-xs text-gray-500">Take a photo of any receipt and we'll store it securely forever.</div>
+                        </div>
+                        <div className="p-4 bg-gray-50 rounded-lg">
+                            <div className="font-bold text-brand-navy mb-1">🤖 AI Analysis</div>
+                            <div className="text-xs text-gray-500">Our AI automatically extracts dates, amounts, and merchants.</div>
+                        </div>
+                        <div className="p-4 bg-gray-50 rounded-lg">
+                            <div className="font-bold text-brand-navy mb-1">📊 Smart Insights</div>
+                            <div className="text-xs text-gray-500">Get instant analytics on your spending habits.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div>
             <header className="mb-6">
