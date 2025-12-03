@@ -26,12 +26,18 @@ export default function Sidebar({ user, tags, unreadNotificationsCount = 0 }: Si
 
     return (
         <>
-            <button
-                className="btn btn-square btn-ghost fixed top-2 left-2 z-50 md:hidden"
-                onClick={() => setIsOpen(!isOpen)}
-            >
-                <Menu size={24} />
-            </button>
+            {/* Mobile Header */}
+            <div className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-50 md:hidden flex items-center px-4 justify-between">
+                <Link href="/dashboard">
+                    <Logo showText={true} size={32} />
+                </Link>
+                <button
+                    className="btn btn-square btn-ghost"
+                    onClick={() => setIsOpen(!isOpen)}
+                >
+                    <Menu size={24} />
+                </button>
+            </div>
 
             {isOpen && (
                 <div
@@ -48,7 +54,9 @@ export default function Sidebar({ user, tags, unreadNotificationsCount = 0 }: Si
                 `}
             >
                 <div className="flex items-center gap-3 mb-8 px-2">
-                    <Logo showText={true} size={32} />
+                    <Link href="/dashboard">
+                        <Logo showText={true} size={32} />
+                    </Link>
                     <button
                         className="btn btn-square btn-ghost btn-sm ml-auto md:hidden"
                         onClick={() => setIsOpen(false)}
