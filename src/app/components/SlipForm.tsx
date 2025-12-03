@@ -239,7 +239,14 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                             accept="image/*"
                         />
 
-                        {preview ? (
+                        {isAnalyzing ? (
+                            <div className="flex flex-col items-center gap-4 py-8">
+                                <span className="loading loading-spinner loading-lg text-brand-teal"></span>
+                                <p className={`text-lg font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    Analyzing slip...
+                                </p>
+                            </div>
+                        ) : preview ? (
                             <div className="relative inline-block">
                                 <img src={preview} alt="Preview" className="max-h-64 rounded-lg shadow-md" />
                                 <button
