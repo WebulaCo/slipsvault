@@ -2,6 +2,7 @@
 
 import { Slip, Tag, Photo } from '@prisma/client'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState } from 'react'
 import { MapPin, Calendar, X, Receipt, MoreVertical, Edit, Trash2 } from 'lucide-react'
 import { deleteSlip } from '@/app/actions'
@@ -239,9 +240,12 @@ export default function SlipList({ slips }: SlipListProps) {
                                                         openLightbox(slip.photos[0].url)
                                                     }}
                                                 >
-                                                    <img
+                                                    <Image
                                                         src={slip.photos[0].url.startsWith('http') ? slip.photos[0].url : `/uploads/${slip.photos[0].url.split('/').pop()}`}
                                                         alt={slip.title}
+                                                        width={32}
+                                                        height={32}
+                                                        className="object-cover w-full h-full"
                                                     />
                                                 </div>
                                             </div>
