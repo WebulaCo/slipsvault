@@ -27,8 +27,8 @@ export default function Sidebar({ user, tags, unreadNotificationsCount = 0 }: Si
     return (
         <>
             {/* Mobile Header */}
-            <div className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-50 md:hidden flex items-center px-4 justify-between">
-                <Link href="/dashboard">
+            <div className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-[60] md:hidden flex items-center px-4 justify-between">
+                <Link href="/dashboard" className="block">
                     <Logo showText={true} size={32} />
                 </Link>
                 <button
