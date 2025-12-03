@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Receipt, Hash, LogOut, Bell } from 'lucide-react'
+import { LayoutDashboard, Receipt, Search, LogOut, Bell } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 
 interface MobileNavProps {
@@ -15,7 +15,7 @@ export default function MobileNav({ unreadNotificationsCount = 0 }: MobileNavPro
     const navItems = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
         { name: 'All Slips', href: '/dashboard/slips', icon: Receipt },
-        { name: 'Tags', href: '/dashboard/search', icon: Hash },
+        { name: 'Search', href: '/dashboard/slips?mobile_filters=true', icon: Search },
         { name: 'Notifications', href: '/dashboard/notifications', icon: Bell },
     ]
 

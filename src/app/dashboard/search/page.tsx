@@ -1,9 +1,18 @@
-import SearchForm from "@/app/components/SearchForm"
+'use client'
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function SearchPage() {
+    const router = useRouter()
+
+    useEffect(() => {
+        router.replace('/dashboard/slips?mobile_filters=true')
+    }, [router])
+
     return (
-        <div className="min-h-screen bg-white p-4 pb-24">
-            <SearchForm />
+        <div className="min-h-screen bg-white p-4 flex items-center justify-center">
+            <span className="loading loading-spinner loading-lg text-brand-teal"></span>
         </div>
     )
 }
