@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import SlipList from "@/app/components/SlipList"
 import SearchInput from "@/app/components/SearchInput"
 import ExportButton from "@/app/components/ExportButton"
-import { Filter, Calendar, ArrowUpDown, ChevronLeft, Plus, Search, SlidersHorizontal, ChevronRight, Receipt } from "lucide-react"
+import { Filter, Calendar, ArrowUpDown, ChevronLeft, Plus, SlidersHorizontal, ChevronRight, Receipt } from "lucide-react"
 import Link from "next/link"
 
 
@@ -100,14 +100,8 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
             </header>
 
             {/* Search Bar */}
-            <div className="relative mb-4">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                <input
-                    type="text"
-                    placeholder="Search by merchant, tag..."
-                    className="w-full bg-white border border-gray-200 rounded-lg py-3 pl-10 pr-4 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-brand-teal focus:border-transparent"
-                    defaultValue={query}
-                />
+            <div className="mb-4">
+                <SearchInput />
             </div>
 
             {/* Filter Chips */}
