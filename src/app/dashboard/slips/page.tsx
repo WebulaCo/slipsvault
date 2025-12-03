@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import SlipList from "@/app/components/SlipList"
 import SearchInput from "@/app/components/SearchInput"
 import ExportButton from "@/app/components/ExportButton"
+import SlipFilters from "@/app/components/SlipFilters"
 import { Filter, Calendar, ArrowUpDown, ChevronLeft, Plus, SlidersHorizontal, ChevronRight, Receipt } from "lucide-react"
 import Link from "next/link"
 
@@ -105,32 +106,7 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
             </div>
 
             {/* Filter Chips */}
-            <div className="flex gap-2 overflow-x-auto pb-2 mb-6 no-scrollbar">
-                <button className="flex items-center gap-2 bg-brand-teal text-white px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap shadow-sm">
-                    <SlidersHorizontal size={16} />
-                    Filter
-                </button>
-                <button className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap">
-                    Date: All time
-                </button>
-                {isCompanyView && (
-                    <div className="dropdown">
-                        <div tabIndex={0} role="button" className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap border ${contributor ? 'bg-brand-teal/10 text-brand-teal border-brand-teal' : 'bg-white border-gray-200 text-gray-700'}`}>
-                            Contributor: {contributor ? companyUsers.find(u => u.id === contributor)?.name || 'Unknown' : 'All'}
-                        </div>
-                        <ul tabIndex={0} className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52">
-                            <li><Link href="/dashboard/slips">All Contributors</Link></li>
-                            {companyUsers.map(user => (
-                                <li key={user.id}>
-                                    <Link href={`/dashboard/slips?contributor=${user.id}`}>
-                                        {user.name || user.email}
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                )}
-            </div>
+            <SlipFilters companyUsers={companyUsers} isCompanyView={isCompanyView || false} />
 
             {/* Slips List */}
             <SlipList slips={slips} />
