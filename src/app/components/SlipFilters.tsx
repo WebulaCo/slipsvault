@@ -95,10 +95,10 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
                         dateRange === 'this_month' ? 'Date: This Month' :
                             dateRange === 'last_month' ? 'Date: Last Month' : 'Date'}
                 </div>
-                <ul tabIndex={0} className="dropdown-content z-50 menu p-2 shadow bg-base-100 rounded-box w-52 mt-1">
-                    <li><button onClick={() => updateFilters('range', 'all')} className={dateRange === 'all' ? 'active' : ''}>All Time</button></li>
-                    <li><button onClick={() => updateFilters('range', 'this_month')} className={dateRange === 'this_month' ? 'active' : ''}>This Month</button></li>
-                    <li><button onClick={() => updateFilters('range', 'last_month')} className={dateRange === 'last_month' ? 'active' : ''}>Last Month</button></li>
+                <ul tabIndex={0} className="dropdown-content z-50 menu p-2 shadow bg-white text-gray-900 rounded-box w-52 mt-1">
+                    <li><button onClick={() => updateFilters('range', 'all')} className={`hover:bg-gray-100 ${dateRange === 'all' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>All Time</button></li>
+                    <li><button onClick={() => updateFilters('range', 'this_month')} className={`hover:bg-gray-100 ${dateRange === 'this_month' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>This Month</button></li>
+                    <li><button onClick={() => updateFilters('range', 'last_month')} className={`hover:bg-gray-100 ${dateRange === 'last_month' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>Last Month</button></li>
                 </ul>
             </div>
 
@@ -108,11 +108,11 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
                     <Tag size={14} />
                     {category === 'all' ? 'Category: All' : `Category: ${category}`}
                 </div>
-                <ul tabIndex={0} className="dropdown-content z-50 menu p-2 shadow bg-base-100 rounded-box w-52 mt-1 max-h-60 overflow-y-auto block">
-                    <li><button onClick={() => updateFilters('category', 'all')} className={category === 'all' ? 'active' : ''}>All Categories</button></li>
+                <ul tabIndex={0} className="dropdown-content z-50 menu p-2 shadow bg-white text-gray-900 rounded-box w-52 mt-1 max-h-60 overflow-y-auto block">
+                    <li><button onClick={() => updateFilters('category', 'all')} className={`hover:bg-gray-100 ${category === 'all' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>All Categories</button></li>
                     {CATEGORIES.map(cat => (
                         <li key={cat}>
-                            <button onClick={() => updateFilters('category', cat)} className={category === cat ? 'active' : ''}>
+                            <button onClick={() => updateFilters('category', cat)} className={`hover:bg-gray-100 ${category === cat ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>
                                 {cat}
                             </button>
                         </li>
@@ -128,11 +128,11 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
                         {contributor === 'all' ? 'Contributor: All' :
                             `Contributor: ${companyUsers.find(u => u.id === contributor)?.name?.split(' ')[0] || 'Unknown'}`}
                     </div>
-                    <ul tabIndex={0} className="dropdown-content z-50 menu p-2 shadow bg-base-100 rounded-box w-52 mt-1 max-h-60 overflow-y-auto block">
-                        <li><button onClick={() => updateFilters('contributor', 'all')} className={contributor === 'all' ? 'active' : ''}>All Contributors</button></li>
+                    <ul tabIndex={0} className="dropdown-content z-50 menu p-2 shadow bg-white text-gray-900 rounded-box w-52 mt-1 max-h-60 overflow-y-auto block">
+                        <li><button onClick={() => updateFilters('contributor', 'all')} className={`hover:bg-gray-100 ${contributor === 'all' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>All Contributors</button></li>
                         {companyUsers.map(user => (
                             <li key={user.id}>
-                                <button onClick={() => updateFilters('contributor', user.id)} className={contributor === user.id ? 'active' : ''}>
+                                <button onClick={() => updateFilters('contributor', user.id)} className={`hover:bg-gray-100 ${contributor === user.id ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>
                                     {user.name || user.email}
                                 </button>
                             </li>
