@@ -36,7 +36,7 @@ export default async function DashboardPage() {
     // Fetch all slips for analytics
     const allSlips = await prisma.slip.findMany({
         where: whereClause,
-        select: { amountAfterTax: true, tags: true, createdAt: true }
+        select: { amountAfterTax: true, tags: true, createdAt: true, date: true }
     })
 
     // Calculate Stats
@@ -44,7 +44,6 @@ export default async function DashboardPage() {
     const totalValue = allSlips.reduce((sum, slip) => sum + (slip.amountAfterTax || 0), 0)
     const averageValue = totalSlips > 0 ? totalValue / totalSlips : 0
 
-    // Calculate Top Tag
     // Calculate Top Tag
     const tagCounts: Record<string, number> = {}
     const tagAmounts: Record<string, number> = {}
@@ -63,18 +62,47 @@ export default async function DashboardPage() {
         .sort((a, b) => b.value - a.value)
         .slice(0, 6) // Top 6 categories
 
-    // Group by Month for Timeline
-    const timelineMap: Record<string, number> = {}
+    // Group by Month for Timeline (Stacked)
+    const timelineMap: Record<string, Record<string, number>> = {}
+    const allCategories = new Set<string>()
+
     allSlips.forEach(slip => {
-        const date = new Date(slip.createdAt)
+        // Use slip date if available, otherwise fallback to createdAt
+        const date = slip.date ? new Date(slip.date) : new Date(slip.createdAt)
         const key = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }) // e.g., "Nov 25"
-        timelineMap[key] = (timelineMap[key] || 0) + (slip.amountAfterTax || 0)
+
+        if (!timelineMap[key]) {
+            timelineMap[key] = {}
+        }
+
+        // Distribute amount across tags (or assign to 'Uncategorized' if no tags)
+        if (slip.tags.length > 0) {
+            const amountPerTag = (slip.amountAfterTax || 0) / slip.tags.length
+            slip.tags.forEach(tag => {
+                timelineMap[key][tag.name] = (timelineMap[key][tag.name] || 0) + amountPerTag
+                allCategories.add(tag.name)
+            })
+        } else {
+            timelineMap[key]['Uncategorized'] = (timelineMap[key]['Uncategorized'] || 0) + (slip.amountAfterTax || 0)
+            allCategories.add('Uncategorized')
+        }
     })
 
     const timelineData = Object.entries(timelineMap)
-        .map(([name, value]) => ({ name, value }))
-        // Sort by date roughly (this is a simple sort, might need better logic for cross-year)
-        .reverse()
+        .map(([name, values]) => ({ name, ...values }))
+        // Sort by date. Since keys are "MMM YY", we need to parse them to sort correctly.
+        .sort((a, b) => {
+            const dateA = new Date(Date.parse(`01 ${a.name.replace(' ', ' 20')}`)) // Hacky parsing "Nov 25" -> "Nov 2025"
+            const dateB = new Date(Date.parse(`01 ${b.name.replace(' ', ' 20')}`))
+            return dateA.getTime() - dateB.getTime()
+        })
+
+    // Sort categories to match the pie chart order (by total value) + others
+    const sortedCategories = Array.from(allCategories).sort((a, b) => {
+        const valA = tagAmounts[a] || 0
+        const valB = tagAmounts[b] || 0
+        return valB - valA
+    })
 
     return (
         <div>
@@ -97,13 +125,13 @@ export default async function DashboardPage() {
                 <div className="card bg-white shadow-sm border border-gray-100 rounded-xl">
                     <div className="card-body p-4">
                         <h3 className="text-xs font-medium text-gray-500 mb-1">Total Value</h3>
-                        <div className="text-2xl font-bold text-gray-900">${totalValue.toFixed(2)}</div>
+                        <div className="text-2xl font-bold text-gray-900">R{totalValue.toFixed(2)}</div>
                     </div>
                 </div>
                 <div className="card bg-white shadow-sm border border-gray-100 rounded-xl">
                     <div className="card-body p-4">
                         <h3 className="text-xs font-medium text-gray-500 mb-1">Average Slip</h3>
-                        <div className="text-2xl font-bold text-gray-900">${averageValue.toFixed(2)}</div>
+                        <div className="text-2xl font-bold text-gray-900">R{averageValue.toFixed(2)}</div>
                     </div>
                 </div>
                 <div className="card bg-white shadow-sm border border-gray-100 rounded-xl">
@@ -114,7 +142,11 @@ export default async function DashboardPage() {
                 </div>
             </div>
 
-            <DashboardCharts categoryData={categoryData} timelineData={timelineData} />
+            <DashboardCharts
+                categoryData={categoryData}
+                timelineData={timelineData}
+                categories={sortedCategories}
+            />
 
             <section className="mb-20 md:mb-0">
                 <div className="flex justify-between items-center mb-4">
