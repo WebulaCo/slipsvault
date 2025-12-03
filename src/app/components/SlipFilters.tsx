@@ -20,31 +20,50 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
     const pathname = usePathname()
     const searchParams = useSearchParams()
 
-    const [dateRange, setDateRange] = useState(searchParams.get('range') || 'all')
-    const [category, setCategory] = useState(searchParams.get('category') || 'all')
-    const [contributor, setContributor] = useState(searchParams.get('contributor') || 'all')
+    const [startDate, setStartDate] = useState(searchParams.get('start') || '')
+    const [endDate, setEndDate] = useState(searchParams.get('end') || '')
 
     // Update local state when URL params change
     useEffect(() => {
-        setDateRange(searchParams.get('range') || 'all')
+        const range = searchParams.get('range') || 'all'
+        const start = searchParams.get('start') || ''
+        const end = searchParams.get('end') || ''
+
+        setDateRange(range)
         setCategory(searchParams.get('category') || 'all')
         setContributor(searchParams.get('contributor') || 'all')
+        setStartDate(start)
+        setEndDate(end)
+
+        // If we have start/end but no range, or range is custom
+        if ((start || end) && range === 'all') {
+            setDateRange('custom')
+        }
     }, [searchParams])
 
     const updateFilters = (key: string, value: string) => {
         const params = new URLSearchParams(window.location.search)
 
+        if (key === 'custom_date') {
+            // Handle custom date inputs
+            if (value === 'start') {
+                setStartDate(params.get('start') || '') // Keep local sync? No, value is the new date
+                // Actually, the input onChange will call this with the new value
+            }
+            return // We'll handle this differently, see below
+        }
+
         if (value === 'all') {
             params.delete(key)
-            // If clearing range, also clear start/end
             if (key === 'range') {
                 params.delete('start')
                 params.delete('end')
+                setStartDate('')
+                setEndDate('')
             }
         } else {
             params.set(key, value)
 
-            // Handle date ranges
             if (key === 'range') {
                 const now = new Date()
                 let start, end
@@ -60,9 +79,28 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
                 if (start && end) {
                     params.set('start', start.toISOString())
                     params.set('end', end.toISOString())
+                } else if (value === 'custom') {
+                    // Don't set start/end yet, wait for user input
+                    // But we need to ensure 'range' is set to custom
                 }
             }
         }
+
+        router.replace(`${pathname}?${params.toString()}`)
+    }
+
+    const handleCustomDateChange = (type: 'start' | 'end', value: string) => {
+        const params = new URLSearchParams(window.location.search)
+        params.set('range', 'custom')
+
+        if (value) {
+            params.set(type, new Date(value).toISOString())
+        } else {
+            params.delete(type)
+        }
+
+        if (type === 'start') setStartDate(value)
+        else setEndDate(value)
 
         router.replace(`${pathname}?${params.toString()}`)
     }
@@ -74,7 +112,8 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
         params.delete('end')
         params.delete('category')
         params.delete('contributor')
-        // Keep search query 'q' if present? Usually yes.
+        setStartDate('')
+        setEndDate('')
         router.replace(`${pathname}?${params.toString()}`)
     }
 
@@ -118,30 +157,56 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
 
                 {/* Date Filter */}
                 <div className="dropdown w-full md:w-auto mb-2 md:mb-0">
-                    <div tabIndex={0} role="button" className={`btn btn-sm btn-outline rounded-full font-normal normal-case w-full md:w-auto justify-start md:justify-center ${dateRange !== 'all' ? 'btn-active bg-brand-teal text-white border-brand-teal' : ''}`}>
+                    <button type="button" tabIndex={0} className={`btn btn-sm btn-outline rounded-full font-normal normal-case w-full md:w-auto justify-start md:justify-center ${dateRange !== 'all' ? 'btn-active bg-brand-teal text-white border-brand-teal' : ''}`}>
                         <Calendar size={14} />
                         {dateRange === 'all' ? 'Date: All Time' :
                             dateRange === 'this_month' ? 'Date: This Month' :
-                                dateRange === 'last_month' ? 'Date: Last Month' : 'Date'}
+                                dateRange === 'last_month' ? 'Date: Last Month' :
+                                    dateRange === 'custom' ? 'Date: Custom' : 'Date'}
+                    </button>
+                    <div tabIndex={0} className="dropdown-content z-[70] menu p-2 shadow bg-white text-gray-900 rounded-box w-full md:w-72 mt-1">
+                        <ul className="menu p-0">
+                            <li><button type="button" onClick={() => { updateFilters('range', 'all'); setShowFilters(false); }} className={`hover:bg-gray-100 ${dateRange === 'all' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>All Time</button></li>
+                            <li><button type="button" onClick={() => { updateFilters('range', 'this_month'); setShowFilters(false); }} className={`hover:bg-gray-100 ${dateRange === 'this_month' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>This Month</button></li>
+                            <li><button type="button" onClick={() => { updateFilters('range', 'last_month'); setShowFilters(false); }} className={`hover:bg-gray-100 ${dateRange === 'last_month' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>Last Month</button></li>
+                            <li><button type="button" onClick={() => updateFilters('range', 'custom')} className={`hover:bg-gray-100 ${dateRange === 'custom' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>Custom Range</button></li>
+                        </ul>
+                        {dateRange === 'custom' && (
+                            <div className="p-2 border-t border-gray-100 mt-2 grid grid-cols-2 gap-2">
+                                <div>
+                                    <label className="text-xs text-gray-500 block mb-1">Start</label>
+                                    <input
+                                        type="date"
+                                        className="input input-xs input-bordered w-full bg-white text-gray-900"
+                                        value={startDate ? new Date(startDate).toISOString().split('T')[0] : ''}
+                                        onChange={(e) => handleCustomDateChange('start', e.target.value)}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-gray-500 block mb-1">End</label>
+                                    <input
+                                        type="date"
+                                        className="input input-xs input-bordered w-full bg-white text-gray-900"
+                                        value={endDate ? new Date(endDate).toISOString().split('T')[0] : ''}
+                                        onChange={(e) => handleCustomDateChange('end', e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
-                    <ul tabIndex={0} className="dropdown-content z-[70] menu p-2 shadow bg-white text-gray-900 rounded-box w-full md:w-52 mt-1">
-                        <li><button onClick={() => { updateFilters('range', 'all'); setShowFilters(false); }} className={`hover:bg-gray-100 ${dateRange === 'all' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>All Time</button></li>
-                        <li><button onClick={() => { updateFilters('range', 'this_month'); setShowFilters(false); }} className={`hover:bg-gray-100 ${dateRange === 'this_month' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>This Month</button></li>
-                        <li><button onClick={() => { updateFilters('range', 'last_month'); setShowFilters(false); }} className={`hover:bg-gray-100 ${dateRange === 'last_month' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>Last Month</button></li>
-                    </ul>
                 </div>
 
                 {/* Category Filter */}
                 <div className="dropdown w-full md:w-auto mb-2 md:mb-0">
-                    <div tabIndex={0} role="button" className={`btn btn-sm btn-outline rounded-full font-normal normal-case w-full md:w-auto justify-start md:justify-center ${category !== 'all' ? 'btn-active bg-brand-teal text-white border-brand-teal' : ''}`}>
+                    <button type="button" tabIndex={0} className={`btn btn-sm btn-outline rounded-full font-normal normal-case w-full md:w-auto justify-start md:justify-center ${category !== 'all' ? 'btn-active bg-brand-teal text-white border-brand-teal' : ''}`}>
                         <Tag size={14} />
                         {category === 'all' ? 'Category: All' : `Category: ${category}`}
-                    </div>
+                    </button>
                     <ul tabIndex={0} className="dropdown-content z-[70] menu p-2 shadow bg-white text-gray-900 rounded-box w-full md:w-52 mt-1 max-h-60 overflow-y-auto block">
-                        <li><button onClick={() => { updateFilters('category', 'all'); setShowFilters(false); }} className={`hover:bg-gray-100 ${category === 'all' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>All Categories</button></li>
+                        <li><button type="button" onClick={() => { updateFilters('category', 'all'); setShowFilters(false); }} className={`hover:bg-gray-100 ${category === 'all' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>All Categories</button></li>
                         {CATEGORIES.map(cat => (
                             <li key={cat}>
-                                <button onClick={() => { updateFilters('category', cat); setShowFilters(false); }} className={`hover:bg-gray-100 ${category === cat ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>
+                                <button type="button" onClick={() => { updateFilters('category', cat); setShowFilters(false); }} className={`hover:bg-gray-100 ${category === cat ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>
                                     {cat}
                                 </button>
                             </li>
@@ -152,16 +217,16 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
                 {/* Contributor Filter (Company View Only) */}
                 {isCompanyView && (
                     <div className="dropdown w-full md:w-auto mb-2 md:mb-0">
-                        <div tabIndex={0} role="button" className={`btn btn-sm btn-outline rounded-full font-normal normal-case w-full md:w-auto justify-start md:justify-center ${contributor !== 'all' ? 'btn-active bg-brand-teal text-white border-brand-teal' : ''}`}>
+                        <button type="button" tabIndex={0} className={`btn btn-sm btn-outline rounded-full font-normal normal-case w-full md:w-auto justify-start md:justify-center ${contributor !== 'all' ? 'btn-active bg-brand-teal text-white border-brand-teal' : ''}`}>
                             <User size={14} />
                             {contributor === 'all' ? 'Contributor: All' :
                                 `Contributor: ${companyUsers.find(u => u.id === contributor)?.name?.split(' ')[0] || 'Unknown'}`}
-                        </div>
+                        </button>
                         <ul tabIndex={0} className="dropdown-content z-[70] menu p-2 shadow bg-white text-gray-900 rounded-box w-full md:w-52 mt-1 max-h-60 overflow-y-auto block">
-                            <li><button onClick={() => { updateFilters('contributor', 'all'); setShowFilters(false); }} className={`hover:bg-gray-100 ${contributor === 'all' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>All Contributors</button></li>
+                            <li><button type="button" onClick={() => { updateFilters('contributor', 'all'); setShowFilters(false); }} className={`hover:bg-gray-100 ${contributor === 'all' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>All Contributors</button></li>
                             {companyUsers.map(user => (
                                 <li key={user.id}>
-                                    <button onClick={() => { updateFilters('contributor', user.id); setShowFilters(false); }} className={`hover:bg-gray-100 ${contributor === user.id ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>
+                                    <button type="button" onClick={() => { updateFilters('contributor', user.id); setShowFilters(false); }} className={`hover:bg-gray-100 ${contributor === user.id ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>
                                         {user.name || user.email}
                                     </button>
                                 </li>
