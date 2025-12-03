@@ -6,6 +6,7 @@ interface LogoProps {
     showSlogan?: boolean;
     size?: number;
     textClassName?: string;
+    sloganClassName?: string;
 }
 
 export default function Logo({
@@ -13,7 +14,8 @@ export default function Logo({
     showText = false,
     showSlogan = false,
     size = 40,
-    textClassName = "text-brand-navy"
+    textClassName = "text-brand-navy",
+    sloganClassName = ""
 }: LogoProps) {
     return (
         <div className={`flex flex-col items-center ${className}`}>
@@ -48,7 +50,7 @@ export default function Logo({
             </div>
 
             {showSlogan && (
-                <span className="text-[10px] tracking-[0.2em] text-gray-500 font-medium mt-2 uppercase text-center">
+                <span className={`text-[10px] tracking-[0.2em] text-gray-500 font-medium mt-2 uppercase text-center ${sloganClassName}`}>
                     SECURE. ORGANIZED. ACCESSIBLE.
                 </span>
             )}

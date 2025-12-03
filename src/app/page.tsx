@@ -14,9 +14,9 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-brand-light flex flex-col">
       {/* Navbar */}
-      <nav className="container mx-auto px-6 py-6 flex justify-between items-center">
+      <nav className="container mx-auto px-6 py-6 flex justify-center md:justify-between items-center">
         <Logo showText={true} showSlogan={true} size={40} />
-        <div className="flex gap-4 items-center">
+        <div className="hidden md:flex gap-4 items-center">
           <Link href="/login" className="text-brand-navy font-medium hover:text-brand-teal transition-colors">
             Login
           </Link>
