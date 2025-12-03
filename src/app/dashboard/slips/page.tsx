@@ -100,11 +100,6 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
                 </Link>
             </header>
 
-            {/* Search Bar */}
-            <div className="mb-4">
-                <SearchInput />
-            </div>
-
             {/* Filter Chips */}
             <SlipFilters companyUsers={companyUsers} isCompanyView={!!isCompanyView} />
 
