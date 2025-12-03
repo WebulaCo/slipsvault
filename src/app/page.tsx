@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import Logo from "@/app/components/Logo";
 
 export default async function Home() {
   const session = await getServerSession(authOptions);
@@ -14,8 +15,8 @@ export default async function Home() {
     <div className="min-h-screen bg-brand-light flex flex-col">
       {/* Navbar */}
       <nav className="container mx-auto px-6 py-6 flex justify-between items-center">
-        <div className="text-2xl font-bold text-brand-navy">Slips Vault</div>
-        <div className="flex gap-4">
+        <Logo showText={true} showSlogan={true} size={40} />
+        <div className="flex gap-4 items-center">
           <Link href="/login" className="text-brand-navy font-medium hover:text-brand-teal transition-colors">
             Login
           </Link>
