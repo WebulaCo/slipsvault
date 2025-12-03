@@ -20,6 +20,9 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
     const pathname = usePathname()
     const searchParams = useSearchParams()
 
+    const [dateRange, setDateRange] = useState(searchParams.get('range') || 'all')
+    const [category, setCategory] = useState(searchParams.get('category') || 'all')
+    const [contributor, setContributor] = useState(searchParams.get('contributor') || 'all')
     const [startDate, setStartDate] = useState(searchParams.get('start') || '')
     const [endDate, setEndDate] = useState(searchParams.get('end') || '')
 
