@@ -284,7 +284,7 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
                                 {category === 'all' ? 'Category: All' : `Category: ${category}`}
                             </div>
                             <div className="collapse-content">
-                                <ul className="menu p-0 max-h-60 overflow-y-auto">
+                                <ul className="menu p-0">
                                     <li><button type="button" onClick={() => updateFilters('category', 'all')} className={category === 'all' ? 'active' : ''}>All Categories</button></li>
                                     {CATEGORIES.map(cat => (
                                         <li key={cat}>
@@ -328,7 +328,7 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
                                         `Contributor: ${companyUsers.find(u => u.id === contributor)?.name?.split(' ')[0] || 'Unknown'}`}
                                 </div>
                                 <div className="collapse-content">
-                                    <ul className="menu p-0 max-h-60 overflow-y-auto">
+                                    <ul className="menu p-0">
                                         <li><button type="button" onClick={() => updateFilters('contributor', 'all')} className={contributor === 'all' ? 'active' : ''}>All Contributors</button></li>
                                         {companyUsers.map(user => (
                                             <li key={user.id}>
@@ -366,7 +366,7 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
                 {hasActiveFilters && (
                     <button
                         onClick={clearAllFilters}
-                        className="btn btn-sm btn-ghost btn-circle text-gray-500 hover:text-red-500 md:ml-2"
+                        className="btn btn-sm btn-ghost text-gray-500 hover:text-red-500 md:ml-2 md:btn-circle w-full md:w-auto justify-start md:justify-center mt-4 md:mt-0"
                         title="Clear all filters"
                     >
                         <X size={16} />
