@@ -68,8 +68,8 @@ export default function SlipList({ slips, isFiltered = false }: SlipListProps) {
         e.stopPropagation()
         const rect = e.currentTarget.getBoundingClientRect()
         setMenuPosition({
-            top: rect.bottom + window.scrollY,
-            left: rect.right - 208 + window.scrollX // 208px is w-52
+            top: rect.bottom,
+            left: rect.right - 208 // 208px is w-52
         })
         setActiveMenuId(activeMenuId === id ? null : id)
     }
