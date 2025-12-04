@@ -7,7 +7,7 @@ export default function SearchPage() {
     const router = useRouter()
 
     useEffect(() => {
-        router.replace('/dashboard/slips?mobile_filters=true')
+        router.replace('/dashboard/slips')
     }, [router])
 
     return (

@@ -385,6 +385,16 @@ export default function SlipFilters({ companyUsers, isCompanyView }: SlipFilters
                         </button>
                     )}
                 </div>
+
+                {/* Mobile Footer (View Results) */}
+                <div className="p-4 border-t border-gray-100 md:hidden mt-auto bg-white shrink-0">
+                    <button
+                        onClick={() => toggleMobileFilters(false)}
+                        className="btn btn-primary w-full text-white"
+                    >
+                        View Results
+                    </button>
+                </div>
             </div>
         </div>
     )
