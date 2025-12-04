@@ -37,9 +37,9 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
 
     if (query) {
         whereClause.OR = [
-            { title: { contains: query } },
-            { place: { contains: query } },
-            { tags: { some: { name: { contains: query } } } }
+            { title: { contains: query, mode: 'insensitive' } },
+            { place: { contains: query, mode: 'insensitive' } },
+            { tags: { some: { name: { contains: query, mode: 'insensitive' } } } }
         ]
     }
 
@@ -84,6 +84,8 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
         })
     }
 
+    const isFiltered = !!(query || start || end || (category && category !== 'All') || contributor)
+
     return (
         <div className="pb-20">
             {/* Header */}
@@ -104,7 +106,7 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
             <SlipFilters companyUsers={companyUsers} isCompanyView={!!isCompanyView} />
 
             {/* Slips List */}
-            <SlipList slips={slips} />
+            <SlipList slips={slips} isFiltered={isFiltered} />
         </div>
     )
 }

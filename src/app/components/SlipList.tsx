@@ -19,12 +19,13 @@ type SlipWithRelations = Slip & {
 
 interface SlipListProps {
     slips: SlipWithRelations[]
+    isFiltered?: boolean
 }
 
 import SwipeableSlipItem from './SwipeableSlipItem'
 import DeleteConfirmationModal from './DeleteConfirmationModal'
 
-export default function SlipList({ slips }: SlipListProps) {
+export default function SlipList({ slips, isFiltered = false }: SlipListProps) {
     const [lightboxOpen, setLightboxOpen] = useState(false)
     const [selectedImage, setSelectedImage] = useState<string | null>(null)
     const [deleteModalOpen, setDeleteModalOpen] = useState(false)
@@ -155,6 +156,23 @@ export default function SlipList({ slips }: SlipListProps) {
     }
 
     if (slips.length === 0) {
+        if (isFiltered) {
+            return (
+                <div className="card border-2 border-dashed border-base-300 p-12 text-center bg-gray-50/50">
+                    <div className="w-16 h-16 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl text-gray-400">
+                        🔍
+                    </div>
+                    <h3 className="text-lg font-bold mb-2 text-gray-700">No results found</h3>
+                    <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                        We couldn't find any slips matching your search criteria. Try adjusting your filters or search terms.
+                    </p>
+                    <Link href="/dashboard/slips" className="btn btn-outline btn-sm">
+                        Clear Filters
+                    </Link>
+                </div>
+            )
+        }
+
         return (
             <div className="card border-2 border-dashed border-base-300 p-16 text-center">
                 <div className="w-16 h-16 bg-base-200 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
