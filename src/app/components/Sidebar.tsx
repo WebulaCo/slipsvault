@@ -19,6 +19,7 @@ export default function Sidebar({ user, tags, unreadNotificationsCount = 0 }: Si
     const navItems = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
         { name: 'All Slips', href: '/dashboard/slips', icon: Receipt },
+        { name: 'Search', href: '/dashboard/search', icon: Search },
         { name: 'Notifications', href: '/dashboard/notifications', icon: Bell },
     ]
 

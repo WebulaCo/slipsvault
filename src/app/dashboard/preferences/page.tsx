@@ -45,67 +45,64 @@ export default async function PreferencesPage() {
     }
 
     return (
-        <div className="min-h-screen bg-brand-light flex flex-col">
+        <div className="max-w-2xl mx-auto">
             {/* Header */}
-            <div className="bg-brand-navy pt-8 pb-12 px-6 rounded-b-[2.5rem] shadow-lg">
-                <div className="max-w-3xl mx-auto w-full">
-                    <div className="flex items-center gap-4 mb-4">
-                        <Link href="/dashboard/settings" className="text-white/80 hover:text-white transition-colors">
-                            <ArrowLeft size={24} />
-                        </Link>
-                        <h1 className="text-2xl font-bold text-white">Company Preferences</h1>
-                    </div>
-                    {companyName && (
-                        <p className="text-brand-teal font-medium">{companyName}</p>
-                    )}
+            <header className="mb-8">
+                <div className="flex items-center gap-4 mb-2">
+                    <Link href="/dashboard/settings" className="text-gray-400 hover:text-brand-navy transition-colors">
+                        <ArrowLeft size={24} />
+                    </Link>
+                    <h1 className="text-2xl font-bold text-brand-navy">Company Preferences</h1>
                 </div>
-            </div>
+                <p className="text-gray-500 ml-10">Manage your company settings and team.</p>
+                {companyName && (
+                    <p className="text-brand-teal font-medium ml-10 mt-1">{companyName}</p>
+                )}
+            </header>
 
             {/* Content */}
-            <div className="flex-1 px-4 -mt-8">
-                <div className="max-w-3xl mx-auto w-full space-y-6">
+            <div className="space-y-6">
 
-                    {/* My Company Section - Visible to all company members */}
-                    {hasCompany && (
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                            <h2 className="text-lg font-bold text-brand-navy mb-4 flex items-center gap-2">
-                                <Building2 size={20} className="text-brand-teal" />
-                                My Company
-                            </h2>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <div className="font-medium text-gray-900">{companyName}</div>
-                                    <div className="text-sm text-gray-500">
-                                        Role: <span className="capitalize">{session.user.role.replace('_', ' ').toLowerCase()}</span>
-                                    </div>
+                {/* My Company Section - Visible to all company members */}
+                {hasCompany && (
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                        <h2 className="text-lg font-bold text-brand-navy mb-4 flex items-center gap-2">
+                            <Building2 size={20} className="text-brand-teal" />
+                            My Company
+                        </h2>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="font-medium text-gray-900">{companyName}</div>
+                                <div className="text-sm text-gray-500">
+                                    Role: <span className="capitalize">{session.user.role.replace('_', ' ').toLowerCase()}</span>
                                 </div>
-                                <LeaveCompanyButton />
                             </div>
+                            <LeaveCompanyButton />
                         </div>
-                    )}
+                    </div>
+                )}
 
-                    {/* Admin Section */}
-                    {isCompanyAdmin && (
-                        <>
-                            <InviteUserForm />
-                            <UserList users={companyUsers} />
-                        </>
-                    )}
+                {/* Admin Section */}
+                {isCompanyAdmin && (
+                    <>
+                        <InviteUserForm />
+                        <UserList users={companyUsers} />
+                    </>
+                )}
 
-                    {/* No Company State */}
-                    {!hasCompany && (
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
-                            <div className="w-16 h-16 bg-brand-light rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Building2 size={32} className="text-brand-navy" />
-                            </div>
-                            <h2 className="text-xl font-bold text-brand-navy mb-2">No Company Associated</h2>
-                            <p className="text-gray-500 mb-6">
-                                You are not currently part of any company. Ask your administrator to invite you.
-                            </p>
+                {/* No Company State */}
+                {!hasCompany && (
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
+                        <div className="w-16 h-16 bg-brand-light rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Building2 size={32} className="text-brand-navy" />
                         </div>
-                    )}
+                        <h2 className="text-xl font-bold text-brand-navy mb-2">No Company Associated</h2>
+                        <p className="text-gray-500 mb-6">
+                            You are not currently part of any company. Ask your administrator to invite you.
+                        </p>
+                    </div>
+                )}
 
-                </div>
             </div>
         </div>
     )
