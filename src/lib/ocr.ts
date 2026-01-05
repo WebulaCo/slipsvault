@@ -50,7 +50,7 @@ export async function analyzeImageWithGemini(buffer: Buffer, mimeType: string = 
         const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY);
         // Use a model capable of vision and JSON output
         const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-flash-001",
+            model: "gemini-3-flash-preview",
             generationConfig: { responseMimeType: "application/json" }
         });
 
