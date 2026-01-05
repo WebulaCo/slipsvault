@@ -1,5 +1,6 @@
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { retryWithBackoff } from "./utils";
 
 interface SlipData {
     place?: string;
@@ -49,7 +50,7 @@ export async function analyzeImageWithGemini(buffer: Buffer, mimeType: string = 
         const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY);
         // Use a model capable of vision and JSON output
         const model = genAI.getGenerativeModel({
-            model: "gemini-2.0-flash",
+            model: "gemini-1.5-flash",
             generationConfig: { responseMimeType: "application/json" }
         });
 
@@ -74,7 +75,10 @@ export async function analyzeImageWithGemini(buffer: Buffer, mimeType: string = 
             Return ONLY the JSON object.
         `;
 
-        const result = await model.generateContent([prompt, imagePart]);
+        const result = await retryWithBackoff(async () => {
+            return await model.generateContent([prompt, imagePart]);
+        }, 5, 2000);
+
         const response = await result.response;
         const text = response.text();
 
