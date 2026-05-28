@@ -7,7 +7,6 @@ export default defineConfig({
   },
   engine: "classic",
   datasource: {
-    url: process.env.POSTGRES_PRISMA_URL ?? "postgresql://dummy:dummy@localhost:5432/dummy",
-    directUrl: process.env.POSTGRES_URL_NON_POOLING ?? "postgresql://dummy:dummy@localhost:5432/dummy",
+    url: process.env.DATABASE_URL ?? "file:./dev.db",
   },
 });

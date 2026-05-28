@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { UploadCloud, X, MapPin, Hash } from 'lucide-react'
 import DeleteConfirmationModal from './DeleteConfirmationModal'
+import ImageCropper from './ImageCropper'
 
 interface SlipData {
     id?: string
@@ -42,6 +43,8 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
     const [preview, setPreview] = useState<string | null>(initialData?.photoUrl || null)
     const [isDragging, setIsDragging] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
+    const [rawFile, setRawFile] = useState<File | null>(null)
+    const [showCropper, setShowCropper] = useState(false)
 
     // Form State
     const [title, setTitle] = useState(initialData?.title || '')
@@ -61,7 +64,7 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
         'Accommodation', 'Other'
     ]
 
-    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement> | File) => {
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement> | File) => {
         let selectedFile: File | undefined
 
         if (e instanceof File) {
@@ -72,12 +75,24 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
 
         if (!selectedFile) return
 
-        setFile(selectedFile)
-        setPreview(URL.createObjectURL(selectedFile))
+        setRawFile(selectedFile)
+        setShowCropper(true)
+
+        if (fileInputRef.current) {
+            fileInputRef.current.value = ''
+        }
+    }
+
+    const handleCropComplete = async (croppedFile: File) => {
+        setShowCropper(false)
+        setRawFile(null)
+
+        setFile(croppedFile)
+        setPreview(URL.createObjectURL(croppedFile))
         setIsAnalyzing(true)
 
         const formData = new FormData()
-        formData.append('photo', selectedFile)
+        formData.append('photo', croppedFile)
 
         try {
             const result = await analyzeSlip(formData)
@@ -115,6 +130,11 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
         } finally {
             setIsAnalyzing(false)
         }
+    }
+
+    const handleCropCancel = () => {
+        setShowCropper(false)
+        setRawFile(null)
     }
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -403,6 +423,14 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                 onConfirm={executeDelete}
                 isDeleting={isSubmitting}
             />
+
+            {showCropper && rawFile && (
+                <ImageCropper
+                    file={rawFile}
+                    onCropComplete={handleCropComplete}
+                    onCancel={handleCropCancel}
+                />
+            )}
         </>
     )
 }
