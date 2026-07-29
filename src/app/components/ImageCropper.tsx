@@ -234,29 +234,42 @@ export default function ImageCropper({ file, onCropComplete, onCancel }: ImageCr
                                     onMouseDown={handleDragStart}
                                     onTouchStart={handleDragStart}
                                 >
-                                    {/* Corner Handles */}
+                                    {/* Grid Lines */}
+                                    <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none">
+                                        <div className="border-r border-b border-white/20" />
+                                        <div className="border-r border-b border-white/20" />
+                                        <div className="border-b border-white/20" />
+                                        <div className="border-r border-b border-white/20" />
+                                        <div className="border-r border-b border-white/20" />
+                                        <div className="border-b border-white/20" />
+                                        <div className="border-r border-white/20" />
+                                        <div className="border-r border-white/20" />
+                                        <div />
+                                    </div>
+
+                                    {/* Corner Handles (Large touch targets) */}
                                     <div 
-                                        className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-brand-teal rounded-full cursor-nwse-resize border border-white shadow-md" 
+                                        className="absolute -top-3.5 -left-3.5 w-7 h-7 bg-brand-teal rounded-full cursor-nwse-resize border-2 border-white shadow-lg flex items-center justify-center" 
                                         data-handle="tl" 
                                     />
                                     <div 
-                                        className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-brand-teal rounded-full cursor-nesw-resize border border-white shadow-md" 
+                                        className="absolute -top-3.5 -right-3.5 w-7 h-7 bg-brand-teal rounded-full cursor-nesw-resize border-2 border-white shadow-lg flex items-center justify-center" 
                                         data-handle="tr" 
                                     />
                                     <div 
-                                        className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-brand-teal rounded-full cursor-nesw-resize border border-white shadow-md" 
+                                        className="absolute -bottom-3.5 -left-3.5 w-7 h-7 bg-brand-teal rounded-full cursor-nesw-resize border-2 border-white shadow-lg flex items-center justify-center" 
                                         data-handle="bl" 
                                     />
                                     <div 
-                                        className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-brand-teal rounded-full cursor-nwse-resize border border-white shadow-md" 
+                                        className="absolute -bottom-3.5 -right-3.5 w-7 h-7 bg-brand-teal rounded-full cursor-nwse-resize border-2 border-white shadow-lg flex items-center justify-center" 
                                         data-handle="br" 
                                     />
 
-                                    {/* Edge Resize Regions */}
-                                    <div className="absolute top-0 bottom-0 -left-1.5 w-3 cursor-ew-resize" data-handle="l" />
-                                    <div className="absolute top-0 bottom-0 -right-1.5 w-3 cursor-ew-resize" data-handle="r" />
-                                    <div className="absolute left-0 right-0 -top-1.5 h-3 cursor-ns-resize" data-handle="t" />
-                                    <div className="absolute left-0 right-0 -bottom-1.5 h-3 cursor-ns-resize" data-handle="b" />
+                                    {/* Edge Resize Regions (Thicker touch targets) */}
+                                    <div className="absolute top-0 bottom-0 -left-3 w-6 cursor-ew-resize" data-handle="l" />
+                                    <div className="absolute top-0 bottom-0 -right-3 w-6 cursor-ew-resize" data-handle="r" />
+                                    <div className="absolute left-0 right-0 -top-3 h-6 cursor-ns-resize" data-handle="t" />
+                                    <div className="absolute left-0 right-0 -bottom-3 h-6 cursor-ns-resize" data-handle="b" />
                                 </div>
                             </>
                         )}
@@ -292,23 +305,32 @@ export default function ImageCropper({ file, onCropComplete, onCancel }: ImageCr
                 </div>
 
                 {/* Footer Buttons */}
-                <div className="flex items-center justify-between px-6 py-4 border-t border-gray-800 bg-[#171a25]">
+                <div className="flex items-center justify-between px-6 py-4 border-t border-gray-800 bg-[#171a25] gap-3">
                     <button
                         type="button"
                         onClick={onCancel}
-                        className="btn border-none bg-gray-800 hover:bg-gray-700 text-white rounded-xl px-6"
+                        className="btn border-none bg-gray-800 hover:bg-gray-700 text-white rounded-xl px-4"
                     >
                         Cancel
                     </button>
-                    <button
-                        type="button"
-                        onClick={handleCropSubmit}
-                        disabled={!isImgLoaded}
-                        className="btn bg-brand-teal hover:bg-brand-teal/90 border-none text-white rounded-xl px-6 gap-2"
-                    >
-                        <Check size={18} />
-                        Crop & Analyze
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            type="button"
+                            onClick={() => onCropComplete(file)}
+                            className="btn btn-outline border-gray-700 hover:border-gray-600 text-gray-300 hover:text-white normal-case rounded-xl px-4"
+                        >
+                            Skip Cropping
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleCropSubmit}
+                            disabled={!isImgLoaded}
+                            className="btn bg-brand-teal hover:bg-brand-teal/90 border-none text-white rounded-xl px-4 gap-2"
+                        >
+                            <Check size={18} />
+                            Crop & Analyze
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
