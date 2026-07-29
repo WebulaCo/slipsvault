@@ -9,7 +9,7 @@ import { redirect } from "next/navigation"
 import { hash } from "bcryptjs"
 
 
-import { analyzeImageWithGemini } from "@/lib/ocr"
+import { analyzeImageWithGemini, analyzeImageWithGrok } from "@/lib/ocr"
 
 export async function analyzeSlip(formData: FormData) {
     try {
@@ -29,9 +29,28 @@ export async function analyzeSlip(formData: FormData) {
         const arrayBuffer = await file.arrayBuffer()
         const buffer = Buffer.from(arrayBuffer)
 
-        const data = await analyzeImageWithGemini(buffer, file.type);
+        let data;
+        let usedGrok = false;
 
-        return { success: true, url, data }
+        try {
+            data = await analyzeImageWithGemini(buffer, file.type);
+        } catch (geminiError: any) {
+            console.error("Gemini failed, trying Grok fallback...", geminiError);
+            const grokKey = process.env.XAI_API_KEY || process.env.GROK_API_KEY;
+            if (grokKey) {
+                try {
+                    data = await analyzeImageWithGrok(buffer, file.type);
+                    usedGrok = true;
+                } catch (grokError: any) {
+                    console.error("Grok fallback also failed:", grokError);
+                    throw new Error(`Gemini failed: ${geminiError.message}. Grok fallback failed: ${grokError.message}`);
+                }
+            } else {
+                throw geminiError;
+            }
+        }
+
+        return { success: true, url, data, usedGrok }
     } catch (error: any) {
         return { success: false, error: error.message || "An unexpected error occurred" };
     }
