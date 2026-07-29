@@ -126,7 +126,19 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
             }
         } catch (err: any) {
             console.error("Analysis failed", err)
-            setError(err.message || "Could not analyze photo. Please check your API key or enter details manually.")
+            const errMsg = err.message || ""
+            if (
+                errMsg.includes("Gemini") || 
+                errMsg.includes("503") || 
+                errMsg.includes("service unavailable") || 
+                errMsg.includes("500") || 
+                errMsg.includes("fetch failed") ||
+                errMsg.includes("API key")
+            ) {
+                setError("Uh Oh the AI went on holiday and can't analyse your slip, please add the details below or try again later.")
+            } else {
+                setError(errMsg || "Could not analyze photo. Please check your API key or enter details manually.")
+            }
         } finally {
             setIsAnalyzing(false)
         }

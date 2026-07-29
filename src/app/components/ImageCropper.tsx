@@ -305,19 +305,19 @@ export default function ImageCropper({ file, onCropComplete, onCancel }: ImageCr
                 </div>
 
                 {/* Footer Buttons */}
-                <div className="flex items-center justify-between px-6 py-4 border-t border-gray-800 bg-[#171a25] gap-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between px-6 py-4 border-t border-gray-800 bg-[#171a25] gap-3">
                     <button
                         type="button"
                         onClick={onCancel}
-                        className="btn border-none bg-gray-800 hover:bg-gray-700 text-white rounded-xl px-4"
+                        className="w-full sm:w-auto btn border-none bg-gray-800 hover:bg-gray-700 text-white rounded-xl px-4 order-3 sm:order-1 h-12"
                     >
                         Cancel
                     </button>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col-reverse sm:flex-row gap-2 w-full sm:w-auto order-1 sm:order-2">
                         <button
                             type="button"
                             onClick={() => onCropComplete(file)}
-                            className="btn btn-outline border-gray-700 hover:border-gray-600 text-gray-300 hover:text-white normal-case rounded-xl px-4"
+                            className="w-full sm:w-auto btn btn-outline border-gray-700 hover:border-gray-600 text-gray-300 hover:text-white normal-case rounded-xl px-4 h-12"
                         >
                             Skip Cropping
                         </button>
@@ -325,7 +325,7 @@ export default function ImageCropper({ file, onCropComplete, onCancel }: ImageCr
                             type="button"
                             onClick={handleCropSubmit}
                             disabled={!isImgLoaded}
-                            className="btn bg-brand-teal hover:bg-brand-teal/90 border-none text-white rounded-xl px-4 gap-2"
+                            className="w-full sm:w-auto btn bg-brand-teal hover:bg-brand-teal/90 border-none text-white rounded-xl px-4 gap-2 flex items-center justify-center h-12"
                         >
                             <Check size={18} />
                             Crop & Analyze
