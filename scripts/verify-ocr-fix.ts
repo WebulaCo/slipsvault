@@ -9,7 +9,7 @@ dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 async function main() {
     try {
-        const imagePath = "/Users/raymondswart/.gemini/antigravity/brain/21164e9a-8896-47ca-a2f8-5b81d77c939e/uploaded_image_1767600048915.png";
+        const imagePath = path.resolve(__dirname, "../public/uploads/17b211b9-f719-4248-95f6-67f4aba081d6.jpeg");
 
         if (!fs.existsSync(imagePath)) {
             console.error("Test image not found at:", imagePath);

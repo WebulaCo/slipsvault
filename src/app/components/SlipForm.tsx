@@ -4,7 +4,7 @@ import { useState, useRef } from 'react'
 import { analyzeSlip, deleteSlip } from '@/app/actions'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { UploadCloud, X, MapPin, Hash } from 'lucide-react'
+import { UploadCloud, X, MapPin, Hash, Camera } from 'lucide-react'
 import DeleteConfirmationModal from './DeleteConfirmationModal'
 import ImageCropper from './ImageCropper'
 
@@ -288,16 +288,17 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                                 </div>
                                 <div>
                                     <p className={`text-lg font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                                        Drag & drop your slip here
+                                        Upload or take a photo of your slip
                                     </p>
-                                    <p className="text-sm text-gray-500 mt-1">or click to browse</p>
+                                    <p className="text-sm text-gray-500 mt-1">Select an image or use your camera</p>
                                 </div>
                                 <button
                                     type="button"
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="w-full btn btn-primary bg-brand-teal hover:bg-brand-teal-hover border-none text-white normal-case text-base font-medium h-12 rounded-xl shadow-md"
+                                    className="w-full btn btn-primary bg-brand-teal hover:bg-brand-teal-hover border-none text-white normal-case text-base font-medium h-12 rounded-xl shadow-md flex items-center justify-center gap-2"
                                 >
-                                    Select File
+                                    <Camera size={18} />
+                                    Take Photo or Select Image
                                 </button>
                             </div>
                         )}

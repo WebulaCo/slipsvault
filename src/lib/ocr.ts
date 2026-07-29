@@ -1,5 +1,5 @@
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { retryWithBackoff } from "./utils";
 
 interface SlipData {
@@ -15,12 +15,13 @@ export async function extractTextFromImage(buffer: Buffer): Promise<string> {
     // This function is kept for backward compatibility or raw text needs,
     // but we'll primarily use analyzeImageWithGemini for structured data.
     try {
-        if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-            throw new Error("GOOGLE_GENERATIVE_AI_API_KEY is not set");
+        const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            throw new Error("No Google AI API Key found in environment variables");
         }
 
-        const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
 
         const imagePart = {
             inlineData: {
@@ -43,15 +44,46 @@ export async function extractTextFromImage(buffer: Buffer): Promise<string> {
 
 export async function analyzeImageWithGemini(buffer: Buffer, mimeType: string = "image/jpeg"): Promise<SlipData> {
     try {
-        if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-            throw new Error("GOOGLE_GENERATIVE_AI_API_KEY is not set");
+        const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            throw new Error("No Google AI API Key found in environment variables");
         }
 
-        const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY);
+        const genAI = new GoogleGenerativeAI(apiKey);
         // Use a model capable of vision and JSON output
         const model = genAI.getGenerativeModel({
             model: "gemini-3.5-flash",
-            generationConfig: { responseMimeType: "application/json" }
+            generationConfig: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+                        place: { type: SchemaType.STRING },
+                        date: { type: SchemaType.STRING },
+                        amountAfterTax: { type: SchemaType.NUMBER },
+                        currency: { type: SchemaType.STRING },
+                        summary: { type: SchemaType.STRING },
+                        tag: {
+                            type: SchemaType.STRING,
+                            format: "enum",
+                            enum: [
+                                "Food",
+                                "Transport",
+                                "Groceries",
+                                "Utilities",
+                                "Shopping",
+                                "Health",
+                                "Entertainment",
+                                "Travel",
+                                "Office Supplies",
+                                "Accommodation",
+                                "Other"
+                            ]
+                        }
+                    },
+                    required: ["place", "date", "amountAfterTax", "currency", "summary", "tag"]
+                }
+            }
         });
 
         const validMimeType = mimeType || "image/jpeg";
@@ -72,7 +104,7 @@ export async function analyzeImageWithGemini(buffer: Buffer, mimeType: string = 
             - summary: A brief summary of the items purchased (max 200 chars).
             - tag: Choose EXACTLY ONE category from this list: Food, Transport, Groceries, Utilities, Shopping, Health, Entertainment, Travel, Office Supplies, Accommodation, Other.
             
-            Return ONLY the JSON object.
+            Return ONLY the JSON object conforming to the schema.
         `;
 
         const result = await retryWithBackoff(async () => {
