@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { analyzeSlip, deleteSlip } from '@/app/actions'
+import { useState, useRef, useEffect } from 'react'
+import { analyzeSlip, deleteSlip, checkForDuplicate } from '@/app/actions'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { UploadCloud, X, MapPin, Hash, Camera } from 'lucide-react'
@@ -58,12 +58,50 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
 
     const [error, setError] = useState('')
     const [infoMessage, setInfoMessage] = useState('')
+    const [duplicateWarning, setDuplicateWarning] = useState<{ id: string, title: string, userName?: string } | null>(null)
 
     const categories = [
         'Food', 'Transport', 'Groceries', 'Utilities', 'Shopping',
         'Health', 'Entertainment', 'Travel', 'Office Supplies',
         'Accommodation', 'Other'
     ]
+
+    useEffect(() => {
+        const check = async () => {
+            if (place && date && amount) {
+                const parsedAmount = parseFloat(amount);
+                if (isNaN(parsedAmount) || parsedAmount <= 0) {
+                    setDuplicateWarning(null);
+                    return;
+                }
+                
+                try {
+                    const duplicate = await checkForDuplicate({
+                        place,
+                        date,
+                        amount: parsedAmount
+                    });
+                    
+                    if (duplicate && duplicate.id !== initialData?.id) {
+                        setDuplicateWarning({
+                            id: duplicate.id,
+                            title: duplicate.title,
+                            userName: duplicate.user?.name || duplicate.user?.email || undefined
+                        });
+                    } else {
+                        setDuplicateWarning(null);
+                    }
+                } catch (err) {
+                    console.error("Duplicate check failed:", err);
+                }
+            } else {
+                setDuplicateWarning(null);
+            }
+        };
+
+        const timer = setTimeout(check, 500); // Debounce
+        return () => clearTimeout(timer);
+    }, [place, date, amount, initialData?.id]);
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement> | File) => {
         let selectedFile: File | undefined
@@ -93,6 +131,7 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
         setIsAnalyzing(true)
         setError('')
         setInfoMessage('')
+        setDuplicateWarning(null)
 
         const formData = new FormData()
         formData.append('photo', croppedFile)
@@ -263,6 +302,26 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                     <div className="alert bg-blue-50 border border-blue-200 text-blue-800 dark:bg-blue-950/30 dark:border-blue-900/50 dark:text-blue-200 flex gap-2 items-center p-4 rounded-xl">
                         <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6 text-blue-500 dark:text-blue-400" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         <span>{infoMessage}</span>
+                    </div>
+                )}
+
+                {duplicateWarning && (
+                    <div className="alert alert-warning bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex gap-2 items-start sm:items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6 text-amber-500 dark:text-amber-400" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                            <span>
+                                <strong>Duplicate Detected:</strong> A matching slip already exists (<em>"{duplicateWarning.title}"</em> {duplicateWarning.userName ? `by ${duplicateWarning.userName}` : ''}).
+                            </span>
+                        </div>
+                        <label className="flex items-center gap-2 cursor-pointer bg-amber-500 hover:bg-amber-600 text-white font-medium px-4 py-2 rounded-xl text-sm transition-colors shadow-md shrink-0 select-none">
+                            <input 
+                                type="checkbox" 
+                                name="ignoreDuplicate" 
+                                className="checkbox border-white [--chkbg:theme(colors.amber.500)] [--chkfg:white]" 
+                                required 
+                            />
+                            <span>Confirm upload anyway</span>
+                        </label>
                     </div>
                 )}
 

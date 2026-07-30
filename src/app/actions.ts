@@ -394,21 +394,42 @@ export async function checkForDuplicate(data: { place: string, date: string, amo
     if (!session) return null
 
     const { place, date, amount } = data
+    if (!place || !date || !amount) return null
 
-    const duplicates = await prisma.slip.findMany({
-        where: {
+    const companyId = session.user.companyId
+    const whereClause = companyId
+        ? {
+            user: { companyId: companyId },
+            amountAfterTax: amount,
+            date: new Date(date),
+            place: {
+                contains: place,
+                mode: 'insensitive' as const
+            }
+          }
+        : {
             userId: session.user.id,
             amountAfterTax: amount,
             date: new Date(date),
             place: {
-                contains: place
+                contains: place,
+                mode: 'insensitive' as const
             }
-        },
+          }
+
+    const duplicates = await prisma.slip.findMany({
+        where: whereClause,
         select: {
             id: true,
             title: true,
             date: true,
-            amountAfterTax: true
+            amountAfterTax: true,
+            user: {
+                select: {
+                    name: true,
+                    email: true
+                }
+            }
         }
     })
 
