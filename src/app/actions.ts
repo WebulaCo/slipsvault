@@ -12,6 +12,7 @@ import { hash } from "bcryptjs"
 import { analyzeImageWithGemini, analyzeImageWithGrok } from "@/lib/ocr"
 
 export async function analyzeSlip(formData: FormData) {
+    let savedUrl: string | undefined;
     try {
         const session = await getServerSession(authOptions)
         if (!session) {
@@ -25,6 +26,7 @@ export async function analyzeSlip(formData: FormData) {
 
         const storage = getStorageService();
         const url = await storage.saveFile(file);
+        savedUrl = url;
 
         const arrayBuffer = await file.arrayBuffer()
         const buffer = Buffer.from(arrayBuffer)
@@ -52,7 +54,7 @@ export async function analyzeSlip(formData: FormData) {
 
         return { success: true, url, data, usedGrok }
     } catch (error: any) {
-        return { success: false, error: error.message || "An unexpected error occurred" };
+        return { success: false, url: savedUrl, error: error.message || "An unexpected error occurred" };
     }
 }
 
@@ -69,6 +71,7 @@ export async function createSlip(formData: FormData) {
 
     const title = formData.get('title') as string
     const content = formData.get('content') as string
+    const summary = formData.get('summary') as string
 
     const place = formData.get('place') as string
     const dateStr = formData.get('date') as string
@@ -114,6 +117,7 @@ export async function createSlip(formData: FormData) {
             data: {
                 title,
                 content,
+                summary,
                 place,
                 date: dateStr ? new Date(dateStr) : null,
                 amountBeforeTax,
@@ -274,6 +278,7 @@ export async function updateSlip(formData: FormData) {
 
     const title = formData.get('title') as string
     const content = formData.get('content') as string
+    const summary = formData.get('summary') as string
 
     const place = formData.get('place') as string
     const dateStr = formData.get('date') as string
@@ -291,7 +296,7 @@ export async function updateSlip(formData: FormData) {
 
     let photoUrl: string | undefined = existingUrl
 
-    if (file && file.size > 0) {
+    if (!photoUrl && file && file.size > 0) {
         const storage = getStorageService()
         photoUrl = await storage.saveFile(file)
     }
@@ -335,6 +340,7 @@ export async function updateSlip(formData: FormData) {
         data: {
             title,
             content,
+            summary,
             place,
             date: dateStr ? new Date(dateStr) : null,
             amountBeforeTax,
@@ -470,7 +476,7 @@ export async function exportSlips() {
             slip.amountAfterTax || 0,
             slip.currency || '',
             escape(tags),
-            escape(slip.content)
+            escape(slip.summary || slip.content)
         ].join(',')
     })
 

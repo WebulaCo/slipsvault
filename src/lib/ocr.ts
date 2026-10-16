@@ -21,7 +21,8 @@ export async function extractTextFromImage(buffer: Buffer): Promise<string> {
         }
 
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
+        const modelName = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+        const model = genAI.getGenerativeModel({ model: modelName });
 
         const imagePart = {
             inlineData: {
@@ -50,9 +51,10 @@ export async function analyzeImageWithGemini(buffer: Buffer, mimeType: string = 
         }
 
         const genAI = new GoogleGenerativeAI(apiKey);
+        const modelName = process.env.GEMINI_MODEL || "gemini-3.8-flash";
         // Use a model capable of vision and JSON output
         const model = genAI.getGenerativeModel({
-            model: "gemini-3.5-flash",
+            model: modelName,
             generationConfig: {
                 responseMimeType: "application/json",
                 responseSchema: {
@@ -109,7 +111,7 @@ export async function analyzeImageWithGemini(buffer: Buffer, mimeType: string = 
 
         const result = await retryWithBackoff(async () => {
             return await model.generateContent([prompt, imagePart]);
-        }, 5, 2000);
+        }, 1, 1500);
 
         const response = await result.response;
         const text = response.text();
@@ -133,7 +135,7 @@ export async function analyzeImageWithGrok(buffer: Buffer, mimeType: string = "i
             throw new Error("No xAI / Grok API Key found in environment variables");
         }
 
-        const modelName = process.env.XAI_MODEL || "grok-2-vision-1212";
+        const modelName = process.env.XAI_MODEL || "grok-4.7";
         const base64Image = buffer.toString("base64");
         const validMimeType = mimeType || "image/jpeg";
 
@@ -182,7 +184,8 @@ export async function analyzeImageWithGrok(buffer: Buffer, mimeType: string = "i
 
         const responseData = await response.json();
         const text = responseData.choices[0].message.content;
-        return JSON.parse(text) as SlipData;
+        const cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        return JSON.parse(cleanedText) as SlipData;
 
     } catch (error: any) {
         console.error("Grok Analysis Failed:", error);

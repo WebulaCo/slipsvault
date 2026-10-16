@@ -139,6 +139,10 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
         try {
             const result = await analyzeSlip(formData)
 
+            if (result.url) {
+                setPhotoUrl(result.url)
+            }
+
             if (!result.success) {
                 throw new Error(result.error || "Analysis failed");
             }
@@ -146,8 +150,6 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
             if (result.usedGrok) {
                 setInfoMessage("The first AI was on holiday, so we tried its handsome cousin (Grok) to analyze your slip instead!")
             }
-
-            setPhotoUrl(result.url!)
 
             const hasData = result.data && (result.data.place || result.data.date || result.data.amountAfterTax);
 
@@ -159,6 +161,7 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                 if (result.data!.date) setDate(result.data!.date)
                 if (result.data!.amountAfterTax) setAmount(result.data!.amountAfterTax.toString())
                 if (result.data!.currency) setCurrency(result.data!.currency)
+                if (result.data!.summary) setSummary(result.data!.summary)
                 if (result.data!.tag) {
                     // Check if the returned tag is in our list, otherwise default to Other or keep as is if valid
                     const suggestedTag = result.data!.tag
@@ -175,6 +178,7 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
             const errMsg = err.message || ""
             if (
                 errMsg.includes("Gemini") || 
+                errMsg.includes("Grok") ||
                 errMsg.includes("503") || 
                 errMsg.includes("service unavailable") || 
                 errMsg.includes("500") || 
@@ -203,15 +207,15 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
         const formData = new FormData(e.currentTarget)
 
         if (photoUrl) {
-            formData.append('photoUrl', photoUrl)
-        }
-
-        if (file) {
+            formData.set('photoUrl', photoUrl)
+        } else if (file) {
             formData.append('photo', file)
         }
 
-        // Append tag manually as it is controlled state
+        // Append controlled state fields
         formData.set('tag', tag)
+        formData.set('currency', currency || 'R')
+        formData.set('summary', summary)
 
         if (initialData) {
             try {
@@ -360,6 +364,7 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                                         e.stopPropagation()
                                         setFile(null)
                                         setPreview(null)
+                                        setPhotoUrl('')
                                     }}
                                     className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
                                 >
@@ -412,13 +417,13 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                                 <span className={`label-text font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Amount</span>
                             </label>
                             <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">$</span>
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">{currency || 'R'}</span>
                                 <input
                                     type="number"
                                     name="amountAfterTax"
                                     step="0.01"
                                     placeholder="0.00"
-                                    className={`${inputClass} pl-8`}
+                                    className={`${inputClass} pl-10`}
                                     value={amount}
                                     onChange={(e) => setAmount(e.target.value)}
                                     required

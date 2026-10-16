@@ -23,13 +23,19 @@ export async function retryWithBackoff<T>(
         } catch (error: any) {
             currentRetries++;
             
-            // Check if we should retry
-            const isRateLimit = 
-                error?.status === 429 || 
-                (error?.message && error.message.includes("429")) ||
-                (error?.message && error.message.includes("Quota exceeded"));
+            // Check if we should retry (skip retry if hard quota limit is 0)
+            const msg = error?.message || "";
+            const isHardZeroQuota = msg.includes("limit: 0");
+            const isTransientError =
+                !isHardZeroQuota &&
+                (error?.status === 429 ||
+                    error?.status === 503 ||
+                    msg.includes("429") ||
+                    msg.includes("503") ||
+                    msg.includes("Quota exceeded") ||
+                    msg.includes("high demand"));
 
-            if (!isRateLimit || currentRetries > retries) {
+            if (!isTransientError || currentRetries > retries) {
                 throw error;
             }
 

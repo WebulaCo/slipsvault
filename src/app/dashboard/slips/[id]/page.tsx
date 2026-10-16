@@ -93,9 +93,16 @@ export default async function SlipDetailsPage({ params }: SlipDetailsPageProps) 
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
                     <label className="text-gray-500 text-sm block mb-1">Amount</label>
                     <div className="font-bold text-lg text-brand-teal">
-                        {slip.currency || '$'}{slip.amountAfterTax?.toFixed(2)}
+                        {slip.currency || 'R'}{slip.amountAfterTax?.toFixed(2)}
                     </div>
                 </div>
+
+                {slip.summary && (
+                    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                        <label className="text-gray-500 text-sm block mb-1">Summary</label>
+                        <div className="text-gray-800 text-sm">{slip.summary}</div>
+                    </div>
+                )}
 
                 <div className="bg-white rounded-xl p-4 space-y-4 shadow-sm border border-gray-100">
                     <div className="flex justify-between items-center border-b border-gray-100 pb-4">

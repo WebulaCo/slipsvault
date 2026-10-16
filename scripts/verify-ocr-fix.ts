@@ -1,5 +1,5 @@
 
-import { analyzeImageWithGemini } from "../src/lib/ocr";
+import { analyzeImageWithGemini, analyzeImageWithGrok } from "../src/lib/ocr";
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
@@ -19,10 +19,13 @@ async function main() {
         console.log("Reading test image...");
         const buffer = fs.readFileSync(imagePath);
 
-        console.log("Testing analyzeImageWithGemini with updated settings...");
-        const result = await analyzeImageWithGemini(buffer);
+        console.log("Testing analyzeImageWithGemini (gemini-3.8-flash)...");
+        const geminiResult = await analyzeImageWithGemini(buffer);
+        console.log("GEMINI SUCCESS! Result:", JSON.stringify(geminiResult, null, 2));
 
-        console.log("SUCCESS! Result:", JSON.stringify(result, null, 2));
+        console.log("Testing analyzeImageWithGrok (grok-4.7)...");
+        const grokResult = await analyzeImageWithGrok(buffer);
+        console.log("GROK SUCCESS! Result:", JSON.stringify(grokResult, null, 2));
     } catch (error) {
         console.error("FAILED:", error);
     }

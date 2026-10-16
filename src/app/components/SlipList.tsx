@@ -3,7 +3,7 @@
 import { Slip, Tag, Photo } from '@prisma/client'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { MapPin, Calendar, X, Receipt, MoreVertical, Edit, Trash2 } from 'lucide-react'
 import { deleteSlip } from '@/app/actions'
 import { useRouter } from 'next/navigation'
@@ -75,16 +75,12 @@ export default function SlipList({ slips, isFiltered = false }: SlipListProps) {
     }
 
     // Close menu when clicking outside
-    const [isClient, setIsClient] = useState(false)
-    if (typeof window !== 'undefined' && !isClient) {
-        setIsClient(true)
-    }
-
-    if (isClient) {
-        window.addEventListener('click', () => {
-            if (activeMenuId) setActiveMenuId(null)
-        }, { once: true })
-    }
+    useEffect(() => {
+        if (!activeMenuId) return
+        const handleOutsideClick = () => setActiveMenuId(null)
+        window.addEventListener('click', handleOutsideClick, { once: true })
+        return () => window.removeEventListener('click', handleOutsideClick)
+    }, [activeMenuId])
 
     const getInitials = (name: string | null | undefined) => {
         if (!name) return '??'
