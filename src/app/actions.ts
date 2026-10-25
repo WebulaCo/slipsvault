@@ -11,6 +11,12 @@ import { hash } from "bcryptjs"
 
 import { analyzeImageWithGemini, analyzeImageWithGrok } from "@/lib/ocr"
 import { saveAndAnalyze } from "@/lib/saveAndAnalyze"
+import {
+    ANALYSIS_GAVE_UP_MESSAGE,
+    isTimeoutError,
+    PHOTO_SAVE_TIMEOUT_MS,
+    withTimeout,
+} from "@/lib/analysisLimits"
 
 function errorMessage(error: unknown): string {
     if (typeof error === "object" && error && "message" in error) {
@@ -40,7 +46,11 @@ export async function analyzeSlip(formData: FormData) {
         const storage = getStorageService();
 
         const outcome = await saveAndAnalyze({
-            save: () => storage.saveFile(uploadFile),
+            save: () => withTimeout(
+                storage.saveFile(uploadFile),
+                PHOTO_SAVE_TIMEOUT_MS,
+                ANALYSIS_GAVE_UP_MESSAGE
+            ),
             analyze: async () => {
                 let data;
                 let usedGrok = false;
@@ -48,6 +58,10 @@ export async function analyzeSlip(formData: FormData) {
                 try {
                     data = await analyzeImageWithGemini(buffer, uploadFile.type);
                 } catch (geminiError: unknown) {
+                    // A timed-out Gemini call must not start a second model call.
+                    if (isTimeoutError(geminiError)) {
+                        throw geminiError;
+                    }
                     console.error("Gemini failed, trying Grok fallback...", geminiError);
                     const grokKey = process.env.XAI_API_KEY || process.env.GROK_API_KEY;
                     if (grokKey) {

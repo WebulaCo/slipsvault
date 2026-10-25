@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { analyzeSlip, deleteSlip, checkForDuplicate } from '@/app/actions'
+import { ANALYSIS_GAVE_UP_MESSAGE, CLIENT_ANALYSIS_TIMEOUT_MS, isTimeoutError, withTimeout } from '@/lib/analysisLimits'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { UploadCloud, X, MapPin, Hash, Camera } from 'lucide-react'
@@ -137,7 +138,11 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
         formData.append('photo', croppedFile)
 
         try {
-            const result = await analyzeSlip(formData)
+            const result = await withTimeout(
+                analyzeSlip(formData),
+                CLIENT_ANALYSIS_TIMEOUT_MS,
+                ANALYSIS_GAVE_UP_MESSAGE
+            )
 
             if (result.url) {
                 setPhotoUrl(result.url)
@@ -173,15 +178,17 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                 console.warn("Analysis returned empty data", result.data);
                 setError("Analysis completed but no text could be extracted. Please enter details manually.");
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Analysis failed", err)
-            const errMsg = err.message || ""
-            if (
-                errMsg.includes("Gemini") || 
+            const errMsg = err instanceof Error ? err.message : ""
+            if (isTimeoutError(err) || errMsg === ANALYSIS_GAVE_UP_MESSAGE) {
+                setError(ANALYSIS_GAVE_UP_MESSAGE)
+            } else if (
+                errMsg.includes("Gemini") ||
                 errMsg.includes("Grok") ||
-                errMsg.includes("503") || 
-                errMsg.includes("service unavailable") || 
-                errMsg.includes("500") || 
+                errMsg.includes("503") ||
+                errMsg.includes("service unavailable") ||
+                errMsg.includes("500") ||
                 errMsg.includes("fetch failed") ||
                 errMsg.includes("API key")
             ) {
