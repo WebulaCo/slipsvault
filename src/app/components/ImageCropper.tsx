@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { RotateCw, X, Check, RefreshCw } from 'lucide-react'
+import { drawScaledCrop, RECEIPT_UPLOAD_JPEG_QUALITY } from '@/lib/receiptImage'
 
 interface ImageCropperProps {
     file: File
@@ -70,24 +71,8 @@ export default function ImageCropper({ file, onCropComplete, onCancel }: ImageCr
         img.src = currentImageUrl
         img.onload = () => {
             const canvas = document.createElement('canvas')
-            
-            // Calculate absolute crop coordinates on the original image
-            const cropX = (crop.x / 100) * img.width
-            const cropY = (crop.y / 100) * img.height
-            const cropW = (crop.w / 100) * img.width
-            const cropH = (crop.h / 100) * img.height
-
-            canvas.width = cropW
-            canvas.height = cropH
-
-            const ctx = canvas.getContext('2d')
-            if (!ctx) return
-
-            ctx.drawImage(
-                img,
-                cropX, cropY, cropW, cropH,
-                0, 0, cropW, cropH
-            )
+            const fitted = drawScaledCrop(img, img.width, img.height, crop, canvas)
+            if (!fitted) return
 
             canvas.toBlob((blob) => {
                 if (!blob) return
@@ -96,7 +81,7 @@ export default function ImageCropper({ file, onCropComplete, onCancel }: ImageCr
                     lastModified: Date.now()
                 })
                 onCropComplete(croppedFile)
-            }, 'image/jpeg', 0.9)
+            }, 'image/jpeg', RECEIPT_UPLOAD_JPEG_QUALITY)
         }
     }
 
