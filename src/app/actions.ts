@@ -10,9 +10,17 @@ import { hash } from "bcryptjs"
 
 
 import { analyzeImageWithGemini, analyzeImageWithGrok } from "@/lib/ocr"
+import { saveAndAnalyze } from "@/lib/saveAndAnalyze"
+
+function errorMessage(error: unknown): string {
+    if (typeof error === "object" && error && "message" in error) {
+        const message = (error as { message?: unknown }).message;
+        if (typeof message === "string" && message) return message;
+    }
+    return "An unexpected error occurred";
+}
 
 export async function analyzeSlip(formData: FormData) {
-    let savedUrl: string | undefined;
     try {
         const session = await getServerSession(authOptions)
         if (!session) {
@@ -24,37 +32,55 @@ export async function analyzeSlip(formData: FormData) {
             return { success: false, error: "No file provided" };
         }
 
+        const buffer = Buffer.from(await file.arrayBuffer())
+        // One read of the upload. Save and analysis both use this copy, so they can run together.
+        const uploadFile = new File([buffer], file.name || "receipt.jpg", {
+            type: file.type || "image/jpeg",
+        })
         const storage = getStorageService();
-        const url = await storage.saveFile(file);
-        savedUrl = url;
 
-        const arrayBuffer = await file.arrayBuffer()
-        const buffer = Buffer.from(arrayBuffer)
+        const outcome = await saveAndAnalyze({
+            save: () => storage.saveFile(uploadFile),
+            analyze: async () => {
+                let data;
+                let usedGrok = false;
 
-        let data;
-        let usedGrok = false;
-
-        try {
-            data = await analyzeImageWithGemini(buffer, file.type);
-        } catch (geminiError: any) {
-            console.error("Gemini failed, trying Grok fallback...", geminiError);
-            const grokKey = process.env.XAI_API_KEY || process.env.GROK_API_KEY;
-            if (grokKey) {
                 try {
-                    data = await analyzeImageWithGrok(buffer, file.type);
-                    usedGrok = true;
-                } catch (grokError: any) {
-                    console.error("Grok fallback also failed:", grokError);
-                    throw new Error(`Gemini failed: ${geminiError.message}. Grok fallback failed: ${grokError.message}`);
+                    data = await analyzeImageWithGemini(buffer, uploadFile.type);
+                } catch (geminiError: unknown) {
+                    console.error("Gemini failed, trying Grok fallback...", geminiError);
+                    const grokKey = process.env.XAI_API_KEY || process.env.GROK_API_KEY;
+                    if (grokKey) {
+                        try {
+                            data = await analyzeImageWithGrok(buffer, uploadFile.type);
+                            usedGrok = true;
+                        } catch (grokError: unknown) {
+                            console.error("Grok fallback also failed:", grokError);
+                            const geminiMessage = errorMessage(geminiError);
+                            const grokMessage = errorMessage(grokError);
+                            throw new Error(`Gemini failed: ${geminiMessage}. Grok fallback failed: ${grokMessage}`);
+                        }
+                    } else {
+                        throw geminiError;
+                    }
                 }
-            } else {
-                throw geminiError;
-            }
+
+                return { data, usedGrok };
+            },
+        });
+
+        if (!outcome.ok) {
+            return { success: false, url: outcome.url, error: errorMessage(outcome.error) };
         }
 
-        return { success: true, url, data, usedGrok }
-    } catch (error: any) {
-        return { success: false, url: savedUrl, error: error.message || "An unexpected error occurred" };
+        return {
+            success: true,
+            url: outcome.url,
+            data: outcome.result.data,
+            usedGrok: outcome.result.usedGrok,
+        }
+    } catch (error: unknown) {
+        return { success: false, error: errorMessage(error) };
     }
 }
 
