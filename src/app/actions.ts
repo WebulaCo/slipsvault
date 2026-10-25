@@ -13,7 +13,6 @@ import { analyzeImageWithGemini, analyzeImageWithGrok } from "@/lib/ocr"
 import { saveAndAnalyze } from "@/lib/saveAndAnalyze"
 import {
     ANALYSIS_GAVE_UP_MESSAGE,
-    isTimeoutError,
     PHOTO_SAVE_TIMEOUT_MS,
     withTimeout,
 } from "@/lib/analysisLimits"
@@ -58,10 +57,7 @@ export async function analyzeSlip(formData: FormData) {
                 try {
                     data = await analyzeImageWithGemini(buffer, uploadFile.type);
                 } catch (geminiError: unknown) {
-                    // A timed-out Gemini call must not start a second model call.
-                    if (isTimeoutError(geminiError)) {
-                        throw geminiError;
-                    }
+                    // Gemini has already tried the fallback model. Grok is last, and only if a key exists.
                     console.error("Gemini failed, trying Grok fallback...", geminiError);
                     const grokKey = process.env.XAI_API_KEY || process.env.GROK_API_KEY;
                     if (grokKey) {
