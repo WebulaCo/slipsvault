@@ -1,6 +1,7 @@
 
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType, type GenerationConfig } from "@google/generative-ai";
 import { retryWithBackoff } from "./utils";
+import { GEMINI_REQUEST_TIMEOUT_MS, GROK_REQUEST_TIMEOUT_MS, receiptThinkingConfig } from "./analysisLimits";
 
 interface SlipData {
     place?: string;
@@ -52,41 +53,46 @@ export async function analyzeImageWithGemini(buffer: Buffer, mimeType: string = 
 
         const genAI = new GoogleGenerativeAI(apiKey);
         const modelName = process.env.GEMINI_MODEL || "gemini-3.8-flash";
-        // Use a model capable of vision and JSON output
-        const model = genAI.getGenerativeModel({
-            model: modelName,
-            generationConfig: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: SchemaType.OBJECT,
-                    properties: {
-                        place: { type: SchemaType.STRING },
-                        date: { type: SchemaType.STRING },
-                        amountAfterTax: { type: SchemaType.NUMBER },
-                        currency: { type: SchemaType.STRING },
-                        summary: { type: SchemaType.STRING },
-                        tag: {
-                            type: SchemaType.STRING,
-                            format: "enum",
-                            enum: [
-                                "Food",
-                                "Transport",
-                                "Groceries",
-                                "Utilities",
-                                "Shopping",
-                                "Health",
-                                "Entertainment",
-                                "Travel",
-                                "Office Supplies",
-                                "Accommodation",
-                                "Other"
-                            ]
-                        }
-                    },
-                    required: ["place", "date", "amountAfterTax", "currency", "summary", "tag"]
-                }
+        const generationConfig: GenerationConfig = {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: SchemaType.OBJECT,
+                properties: {
+                    place: { type: SchemaType.STRING },
+                    date: { type: SchemaType.STRING },
+                    amountAfterTax: { type: SchemaType.NUMBER },
+                    currency: { type: SchemaType.STRING },
+                    summary: { type: SchemaType.STRING },
+                    tag: {
+                        type: SchemaType.STRING,
+                        format: "enum",
+                        enum: [
+                            "Food",
+                            "Transport",
+                            "Groceries",
+                            "Utilities",
+                            "Shopping",
+                            "Health",
+                            "Entertainment",
+                            "Travel",
+                            "Office Supplies",
+                            "Accommodation",
+                            "Other"
+                        ]
+                    }
+                },
+                required: ["place", "date", "amountAfterTax", "currency", "summary", "tag"]
             }
-        });
+        };
+        // The SDK JSON-encodes this object as-is. Gemini 3.8 Flash otherwise thinks at medium.
+        const thinking = receiptThinkingConfig(modelName);
+        if (thinking) {
+            (generationConfig as GenerationConfig & { thinkingConfig: { thinkingLevel: "low" } }).thinkingConfig = thinking;
+        }
+        const model = genAI.getGenerativeModel(
+            { model: modelName, generationConfig },
+            { timeout: GEMINI_REQUEST_TIMEOUT_MS }
+        );
 
         const validMimeType = mimeType || "image/jpeg";
 
@@ -121,10 +127,10 @@ export async function analyzeImageWithGemini(buffer: Buffer, mimeType: string = 
 
         return JSON.parse(cleanedText) as SlipData;
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Gemini Analysis Failed:", error);
-        const errorMessage = error?.message || "Unknown error";
-        throw new Error(`Gemini Analysis Failed: ${errorMessage}`);
+        const detail = error instanceof Error ? error.message : "Unknown error";
+        throw new Error(`Gemini Analysis Failed: ${detail}`);
     }
 }
 
@@ -153,6 +159,7 @@ export async function analyzeImageWithGrok(buffer: Buffer, mimeType: string = "i
 
         const response = await fetch("https://api.x.ai/v1/chat/completions", {
             method: "POST",
+            signal: AbortSignal.timeout(GROK_REQUEST_TIMEOUT_MS),
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${apiKey}`
@@ -187,10 +194,10 @@ export async function analyzeImageWithGrok(buffer: Buffer, mimeType: string = "i
         const cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim();
         return JSON.parse(cleanedText) as SlipData;
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Grok Analysis Failed:", error);
-        const errorMessage = error?.message || "Unknown error";
-        throw new Error(`Grok Analysis Failed: ${errorMessage}`);
+        const detail = error instanceof Error ? error.message : "Unknown error";
+        throw new Error(`Grok Analysis Failed: ${detail}`);
     }
 }
 
