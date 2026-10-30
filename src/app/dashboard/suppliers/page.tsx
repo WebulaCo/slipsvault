@@ -8,6 +8,7 @@ import {
     buildCanonicalSupplierMap,
     formatMonthKey,
     getRawSlipSupplier,
+    clusterSupplierTitles,
     getSlipMonthKey,
     isSameSupplier,
     stripSupplierPrefix,
@@ -22,6 +23,43 @@ import {
     TrendingUp,
     MapPin,
 } from "lucide-react"
+
+function capLabels(items: string[], max: number): { shown: string[]; extra: number } {
+    const unique = Array.from(new Set(items.filter(Boolean)))
+    return {
+        shown: unique.slice(0, max),
+        extra: Math.max(0, unique.length - max),
+    }
+}
+
+function LocationList({ locations }: { locations: string[] }) {
+    const { shown, extra } = capLabels(locations, 2)
+    if (shown.length === 0) return null
+    return (
+        <span>
+            {shown.join(', ')}
+            {extra > 0 ? ` +${extra}` : ''}
+        </span>
+    )
+}
+
+function CategoryChips({ categories }: { categories: string[] }) {
+    const { shown, extra } = capLabels(categories, 3)
+    if (shown.length === 0) return null
+    return (
+        <span className="inline-flex flex-wrap gap-1">
+            {shown.map((cat) => (
+                <span
+                    key={cat}
+                    className="bg-yellow-50 text-yellow-700 border border-yellow-100 px-2 py-0.5 rounded text-xs font-medium"
+                >
+                    {cat}
+                </span>
+            ))}
+            {extra > 0 && <span className="text-xs text-gray-400 self-center">+{extra}</span>}
+        </span>
+    )
+}
 
 interface SuppliersPageProps {
     searchParams: Promise<{
@@ -43,7 +81,7 @@ export default async function SuppliersPage({ searchParams }: SuppliersPageProps
     const activeMonth = month && month !== 'all' ? month : ''
     const activeSupplier = supplier && supplier !== 'all' ? supplier : ''
     const searchQuery = (q || '').trim().toLowerCase()
-    const viewMode = view || 'both' // 'both' | 'suppliers' | 'monthly'
+    const viewMode = view || 'suppliers' // 'suppliers' | 'monthly' | 'both'
 
     const isCompanyView =
         (session.user.role === 'COMPANY_ADMIN' ||
@@ -65,6 +103,35 @@ export default async function SuppliersPage({ searchParams }: SuppliersPageProps
         },
     })
 
+    if (allSlips.length === 0) {
+        return (
+            <div className="pb-20">
+                <header className="flex flex-col items-start gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between">
+                    <Link href="/dashboard" className="flex items-center gap-1 font-medium text-brand-teal min-h-11">
+                        <ChevronLeft size={20} />
+                        Dashboard
+                    </Link>
+                    <h1 className="text-xl font-bold text-brand-navy flex items-center gap-2">
+                        <Store size={22} className="text-brand-teal shrink-0" />
+                        Suppliers
+                    </h1>
+                </header>
+                <div className="card bg-white border-2 border-dashed border-brand-teal/30 p-8 text-center rounded-xl">
+                    <div className="w-16 h-16 bg-brand-light rounded-full flex items-center justify-center mx-auto mb-4 text-brand-teal">
+                        <Store size={30} />
+                    </div>
+                    <h2 className="text-lg font-bold text-brand-navy mb-2">No suppliers yet</h2>
+                    <p className="text-gray-500 text-sm mb-6 max-w-md mx-auto">
+                        Suppliers are worked out from the merchant on each slip. Upload a slip and its merchant will show up here, ready to tidy later.
+                    </p>
+                    <Link href="/dashboard/create" className="btn bg-brand-teal hover:bg-brand-teal-hover text-white border-none normal-case h-11">
+                        Upload first slip
+                    </Link>
+                </div>
+            </div>
+        )
+    }
+
     // Build canonical supplier mapping so variant names ("Engen" and "Engen Blouberg Motors")
     // are grouped under the canonical supplier ("Engen")
     const rawSupplierNames = allSlips.map((s) => getRawSlipSupplier(s))
@@ -75,26 +142,9 @@ export default async function SuppliersPage({ searchParams }: SuppliersPageProps
         return canonicalMap.get(raw.toLowerCase()) || raw
     }
 
-    // Names that the matcher already groups. The user picks the clean name later.
-    const titlesByCanonical = new Map<string, Set<string>>()
-    for (const slip of allSlips) {
-        const rawTitle = (slip.title || '').trim()
-        if (!rawTitle) continue
-        const canon = getCanonicalSupplier(slip)
-        const set = titlesByCanonical.get(canon) || new Set<string>()
-        set.add(rawTitle)
-        titlesByCanonical.set(canon, set)
-    }
-    const variantGroups = Array.from(titlesByCanonical.values())
-        .map((set) => {
-            const seen = new Map<string, string>()
-            for (const name of set) {
-                const key = name.toLowerCase()
-                if (!seen.has(key)) seen.set(key, name)
-            }
-            return { names: Array.from(seen.values()) }
-        })
-        .filter((group) => group.names.length >= 2)
+    const variantGroups = clusterSupplierTitles(allSlips.map((slip) => slip.title || '')).map(
+        (names) => ({ names })
+    )
 
     // Collect all canonical supplier names and month stats across the vault
     const allSupplierNames = Array.from(new Set(allSlips.map(getCanonicalSupplier))).sort(
@@ -373,25 +423,29 @@ export default async function SuppliersPage({ searchParams }: SuppliersPageProps
     return (
         <div className="pb-20">
             {/* Header */}
-            <header className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2 text-brand-teal">
-                    <Link href="/dashboard" className="flex items-center gap-1 font-medium">
-                        <ChevronLeft size={20} />
-                        <span className="hidden sm:inline">Dashboard</span>
+            <header className="flex flex-col items-start gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between">
+                <Link href="/dashboard" className="flex items-center gap-1 font-medium text-brand-teal min-h-11">
+                    <ChevronLeft size={20} />
+                    Dashboard
+                </Link>
+                <h1 className="text-xl font-bold text-brand-navy flex items-center gap-2">
+                    <Store size={22} className="text-brand-teal shrink-0" />
+                    Suppliers
+                </h1>
+                <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                        href="/dashboard/suppliers/review"
+                        className="btn btn-sm btn-outline border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white rounded-full normal-case min-h-11"
+                    >
+                        Review names
+                    </Link>
+                    <Link
+                        href="/dashboard/slips"
+                        className="btn btn-sm btn-outline border-gray-200 text-gray-700 hover:bg-brand-navy hover:text-white rounded-full normal-case min-h-11"
+                    >
+                        All Slips
                     </Link>
                 </div>
-                <div className="text-center">
-                    <h1 className="text-xl font-bold text-brand-navy flex items-center justify-center gap-2">
-                        <Store size={22} className="text-brand-teal" />
-                        Suppliers &amp; Monthly Spend
-                    </h1>
-                </div>
-                <Link
-                    href="/dashboard/slips"
-                    className="btn btn-sm btn-outline border-gray-200 text-gray-700 hover:bg-brand-navy hover:text-white rounded-full normal-case"
-                >
-                    All Slips
-                </Link>
             </header>
 
             {/* Filter Bar */}
@@ -420,7 +474,7 @@ export default async function SuppliersPage({ searchParams }: SuppliersPageProps
                                 ? `Spend (${formatMonthKey(activeMonth, 'short')})`
                                 : 'Total Spend'}
                         </h3>
-                        <div className="text-2xl font-bold text-brand-navy font-mono">
+                        <div className="text-xl sm:text-2xl font-bold text-brand-navy font-mono break-words">
                             R{grandTotalSpend.toFixed(2)}
                         </div>
                         <div className="text-xs text-gray-400 mt-0.5">
@@ -556,14 +610,14 @@ export default async function SuppliersPage({ searchParams }: SuppliersPageProps
                     {/* SECTION 1: Suppliers Summary Table / Cards */}
                     {(viewMode === 'both' || viewMode === 'suppliers') && (
                         <div>
-                            <div className="flex items-center justify-between mb-3">
+                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between mb-3">
                                 <h2 className="text-base font-bold text-brand-navy flex items-center gap-2">
-                                    <Store size={18} className="text-brand-teal" />
+                                    <Store size={18} className="text-brand-teal shrink-0" />
                                     Spend by Supplier{' '}
                                     {activeMonth ? `(${formatMonthKey(activeMonth, 'long')})` : '(All Selected Months)'}
                                 </h2>
                                 <span className="text-xs text-gray-400">
-                                    Click a supplier to inspect monthly history &amp; slips
+                                    Open a supplier for its monthly history
                                 </span>
                             </div>
 
@@ -597,9 +651,9 @@ export default async function SuppliersPage({ searchParams }: SuppliersPageProps
                                                             {sup.name}
                                                         </Link>
                                                         {sup.locations.length > 0 && (
-                                                            <div className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-                                                                <MapPin size={11} />
-                                                                <span>{sup.locations.join(', ')}</span>
+                                                            <div className="text-xs text-gray-400 flex items-start gap-1 mt-0.5">
+                                                                <MapPin size={11} className="mt-0.5 shrink-0" />
+                                                                <LocationList locations={sup.locations} />
                                                             </div>
                                                         )}
                                                         <div className="text-xs text-gray-500 mt-0.5">
@@ -617,18 +671,7 @@ export default async function SuppliersPage({ searchParams }: SuppliersPageProps
                                                     </div>
                                                 </div>
 
-                                                {sup.categories.length > 0 && (
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {sup.categories.map((cat) => (
-                                                            <span
-                                                                key={cat}
-                                                                className="bg-yellow-50 text-yellow-700 border border-yellow-100 px-2 py-0.5 rounded text-xs font-medium"
-                                                            >
-                                                                {cat}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                )}
+                                                <CategoryChips categories={sup.categories} />
 
                                                 <div className="flex items-center justify-between pt-1">
                                                     <Link
@@ -702,27 +745,14 @@ export default async function SuppliersPage({ searchParams }: SuppliersPageProps
                                                             </Link>
                                                         </td>
                                                         <td className="text-xs text-gray-500">
-                                                            {sup.locations.length > 0
-                                                                ? sup.locations.join(', ')
-                                                                : '-'}
+                                                            {sup.locations.length > 0 ? (
+                                                                <LocationList locations={sup.locations} />
+                                                            ) : (
+                                                                '-'
+                                                            )}
                                                         </td>
                                                         <td>
-                                                            <div className="flex flex-wrap gap-1">
-                                                                {sup.categories.length > 0 ? (
-                                                                    sup.categories.map((cat) => (
-                                                                        <span
-                                                                            key={cat}
-                                                                            className="bg-yellow-50 text-yellow-700 border border-yellow-100 px-2 py-0.5 rounded text-xs font-medium"
-                                                                        >
-                                                                            {cat}
-                                                                        </span>
-                                                                    ))
-                                                                ) : (
-                                                                    <span className="text-xs text-gray-400">
-                                                                        -
-                                                                    </span>
-                                                                )}
-                                                            </div>
+                                                            <CategoryChips categories={sup.categories} />
                                                         </td>
                                                         <td className="text-center font-medium">
                                                             {sup.slipCount}
@@ -794,22 +824,22 @@ export default async function SuppliersPage({ searchParams }: SuppliersPageProps
                                         key={mb.monthKey}
                                         className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
                                     >
-                                        <div className="bg-gray-50/80 px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <Calendar size={16} className="text-brand-teal" />
+                                        <div className="bg-gray-50/80 px-4 py-3 border-b border-gray-100 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                            <div className="flex flex-wrap items-center gap-2 min-w-0">
+                                                <Calendar size={16} className="text-brand-teal shrink-0" />
                                                 <Link
                                                     href={`/dashboard/suppliers?month=${encodeURIComponent(mb.monthKey)}`}
                                                     className="font-bold text-brand-navy hover:text-brand-teal"
                                                 >
                                                     {mb.monthLabel}
                                                 </Link>
-                                                <span className="badge badge-sm bg-white text-gray-600 border-gray-200">
+                                                <span className="badge badge-sm bg-white text-gray-600 border-gray-200 h-auto whitespace-normal py-1">
                                                     {mb.slipCount} {mb.slipCount === 1 ? 'slip' : 'slips'} •{' '}
                                                     {mb.suppliers.length}{' '}
                                                     {mb.suppliers.length === 1 ? 'supplier' : 'suppliers'}
                                                 </span>
                                             </div>
-                                            <div className="flex items-center gap-3">
+                                            <div className="flex items-center justify-between gap-3 sm:justify-end">
                                                 <span className="font-mono font-bold text-brand-navy">
                                                     R{mb.totalSpend.toFixed(2)}
                                                 </span>
@@ -835,7 +865,7 @@ export default async function SuppliersPage({ searchParams }: SuppliersPageProps
                                                 return (
                                                     <div
                                                         key={`${mb.monthKey}-${sup.name}`}
-                                                        className="px-4 py-3 flex items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors"
+                                                        className="px-4 py-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between hover:bg-gray-50/50 transition-colors"
                                                     >
                                                         <div className="min-w-0">
                                                             <div className="flex items-center gap-2 flex-wrap">
@@ -847,17 +877,10 @@ export default async function SuppliersPage({ searchParams }: SuppliersPageProps
                                                                 </Link>
                                                                 {sup.locations.length > 0 && (
                                                                     <span className="text-xs text-gray-400">
-                                                                        ({sup.locations.join(', ')})
+                                                                        (<LocationList locations={sup.locations} />)
                                                                     </span>
                                                                 )}
-                                                                {sup.categories.map((cat) => (
-                                                                    <span
-                                                                        key={cat}
-                                                                        className="bg-yellow-50 text-yellow-700 border border-yellow-100 px-1.5 py-0.5 rounded text-[11px] font-medium"
-                                                                    >
-                                                                        {cat}
-                                                                    </span>
-                                                                ))}
+                                                                <CategoryChips categories={sup.categories} />
                                                             </div>
                                                             <div className="text-xs text-gray-400 mt-0.5">
                                                                 {sup.slipCount}{' '}
