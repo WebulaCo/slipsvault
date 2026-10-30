@@ -141,6 +141,65 @@ export function levenshteinDistance(a: string, b: string): number {
     return dp[s.length][t.length]
 }
 
+const STRONG_NOTE_TOKENS = new Set([
+    'lunch',
+    'dinner',
+    'breakfast',
+    'brunch',
+    'client',
+    'meeting',
+    'coffee',
+    'personal',
+])
+
+const WEAK_NOTE_TOKENS = new Set([
+    'with',
+    'fuel',
+    'food',
+    'groceries',
+    'shopping',
+    'hardware',
+])
+
+/**
+ * When the title reads like a note and place looks like the merchant,
+ * suggest using place as the supplier name. Returns null when they already match.
+ */
+export function suggestPlaceAsSupplier(slip: {
+    title?: string | null
+    place?: string | null
+}): string | null {
+    const title = (slip.title || '').trim()
+    const place = (slip.place || '').trim()
+    if (!title || !place) return null
+    if (title.toLowerCase() === place.toLowerCase()) return null
+    if (isSameSupplier(title, place)) return null
+
+    const tokens = tokenizeSupplierName(title)
+    if (tokens.length === 0) return null
+    const hasStrongNote = tokens.some((token) => STRONG_NOTE_TOKENS.has(token))
+    const onlyNoteWords = tokens.every((token) => WEAK_NOTE_TOKENS.has(token) || token.length <= 2)
+    if (!hasStrongNote && !onlyNoteWords) return null
+    return place
+}
+
+export function clusterSupplierTitles(titles: string[]): string[][] {
+    const cleaned = titles.map((title) => (title || '').trim()).filter(Boolean)
+    const canonicalMap = buildCanonicalSupplierMap(cleaned)
+    const groups = new Map<string, Map<string, string>>()
+
+    for (const title of cleaned) {
+        const canonical = canonicalMap.get(title.toLowerCase()) || title
+        const names = groups.get(canonical) || new Map<string, string>()
+        names.set(title.toLowerCase(), title)
+        groups.set(canonical, names)
+    }
+
+    return Array.from(groups.values())
+        .map((names) => Array.from(names.values()))
+        .filter((names) => names.length >= 2)
+}
+
 /**
  * Determines the raw supplier name from a slip record.
  * In Slips Vault, `title` is "Title / Merchant" (required) and `place` is "Location / Place".
