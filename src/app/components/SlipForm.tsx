@@ -194,14 +194,16 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                 })
             }
 
-            const hasData = result.data && (result.data.place || result.data.date || result.data.amountAfterTax);
+            const scannedMerchant = result.data?.merchant || ''
+            const scannedLocation = result.data?.location || ''
+            const hasData = result.data && (scannedMerchant || result.data.date || result.data.amountAfterTax);
 
             if (hasData) {
-                if (result.data!.place) {
-                    // Keep the scanned merchant. A saved supplier is offered as a suggestion, not applied.
+                if (scannedMerchant) {
+                    // Merchant and location stay in different fields. A saved supplier is only a suggestion.
                     setMatchedSupplierInfo(null)
-                    setPlace(result.data!.place)
-                    if (!title) setTitle(result.data!.place)
+                    setPlace(scannedLocation)
+                    if (!title) setTitle(scannedMerchant)
                 }
                 if (result.data!.date) setDate(result.data!.date)
                 if (result.data!.amountAfterTax) setAmount(result.data!.amountAfterTax.toString())
