@@ -29,7 +29,7 @@ export default function SupplierFiltersBar({
 
     const currentMonth = searchParams.get('month') || 'all'
     const currentSupplier = searchParams.get('supplier') || 'all'
-    const currentView = searchParams.get('view') || 'both'
+    const currentView = searchParams.get('view') || 'suppliers'
     const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '')
 
     useEffect(() => {
@@ -38,7 +38,7 @@ export default function SupplierFiltersBar({
 
     const updateParam = (key: string, value: string) => {
         const params = new URLSearchParams(searchParams.toString())
-        if (!value || value === 'all' || (key === 'view' && value === 'both')) {
+        if (!value || value === 'all' || (key === 'view' && value === 'suppliers')) {
             params.delete(key)
         } else {
             params.set(key, value)
@@ -202,7 +202,7 @@ export default function SupplierFiltersBar({
                                     : 'bg-transparent text-gray-500'
                             }`}
                         >
-                            Grouped by Month
+                            By month
                         </button>
                     </div>
 
