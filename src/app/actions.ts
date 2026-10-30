@@ -110,7 +110,7 @@ export async function analyzeSlip(formData: FormData) {
         if (extracted?.date && typeof extracted?.amountAfterTax === 'number' && extracted.amountAfterTax > 0) {
             try {
                 duplicate = await checkForDuplicate({
-                    title: supplierMatch?.canonicalName || extracted.place || '',
+                    title: extracted.place || '',
                     place: extracted.place || '',
                     date: extracted.date,
                     amount: extracted.amountAfterTax,

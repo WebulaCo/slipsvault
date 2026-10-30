@@ -140,6 +140,31 @@ test("resolveMergeScope keeps contributors on their own slips", () => {
     );
 });
 
+test("matcher keeps weak words apart and links real branch variants", () => {
+    assert.equal(isSameSupplier("Cafe", "Cafe Neo"), false);
+    assert.equal(isSameSupplier("Cafe Neo", "Cafe Mocha"), false);
+    assert.equal(isSameSupplier("Fuel", "Fuel Stop Engen"), false);
+    assert.equal(isSameSupplier("Sparks", "Spark"), false);
+    assert.equal(isSameSupplier("Clicks", "Click"), false);
+    assert.equal(isSameSupplier("Engen Blouberg", "Engen Hermanus"), true);
+    assert.equal(isSameSupplier("Woolworths Food Gardens", "Woolworths Cavendish"), true);
+    assert.equal(isSameSupplier("KFC", "KFC Canal Walk"), true);
+    assert.equal(isSameSupplier("BP", "BP Parklands"), true);
+    assert.equal(isSameSupplier("Pick n Pay", "PnP Family"), true);
+    assert.equal(isSameSupplier("Dis-Chem", "Dischem Tyger Valley"), true);
+    assert.equal(isSameSupplier("McDonald's", "McDonalds Menlyn"), true);
+});
+
+test("buildCanonicalSupplierMap prefers the most common name", () => {
+    const map = buildCanonicalSupplierMap([
+        "Engen Blouberg",
+        "Engen Blouberg",
+        "Engen",
+    ]);
+    assert.equal(map.get("engen blouberg"), "Engen Blouberg");
+    assert.equal(map.get("engen"), "Engen Blouberg");
+});
+
 test("getSlipMonthKey uses UTC year and month consistently", () => {
     assert.equal(
         getSlipMonthKey({ date: "2025-11-01T00:00:00.000Z" }),

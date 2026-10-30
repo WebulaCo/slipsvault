@@ -198,18 +198,10 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
 
             if (hasData) {
                 if (result.data!.place) {
-                    if (result.supplierMatch) {
-                        setTitle(result.supplierMatch.canonicalName)
-                        setPlace(result.supplierMatch.extractedLocation || result.data!.place)
-                        setMatchedSupplierInfo({
-                            canonicalName: result.supplierMatch.canonicalName,
-                            rawExtracted: result.data!.place,
-                            extractedLocation: result.supplierMatch.extractedLocation,
-                        })
-                    } else {
-                        setPlace(result.data!.place)
-                        if (!title) setTitle(result.data!.place)
-                    }
+                    // Keep the scanned merchant. A saved supplier is offered as a suggestion, not applied.
+                    setMatchedSupplierInfo(null)
+                    setPlace(result.data!.place)
+                    if (!title) setTitle(result.data!.place)
                 }
                 if (result.data!.date) setDate(result.data!.date)
                 if (result.data!.amountAfterTax) setAmount(result.data!.amountAfterTax.toString())
