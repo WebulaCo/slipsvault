@@ -324,3 +324,161 @@ export function formatMonthKey(
         timeZone: 'UTC',
     })
 }
+
+/** Escape a user-supplied name so it can be placed inside a RegExp literally. */
+export function escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/**
+ * Remove a leading supplier name from a location string.
+ * The name is escaped, so characters like "(" cannot throw or change the pattern.
+ */
+export function stripSupplierPrefix(rawPlace: string, supplierName: string): string {
+    const place = (rawPlace || '').trim()
+    const name = (supplierName || '').trim()
+    if (!place || !name) return place
+    if (place.toLowerCase() === name.toLowerCase()) return place
+
+    const pattern = new RegExp(`^${escapeRegExp(name)}\\s*`, 'i')
+    const stripped = place.replace(pattern, '').replace(/^[\s\-,:/]+/, '').trim()
+    return stripped || place
+}
+
+const LEGAL_SUFFIX_TOKENS = new Set([
+    'pty',
+    'ltd',
+    'limited',
+    'cc',
+    'inc',
+    'corp',
+    'llc',
+    'sa',
+    'rsa',
+    'the',
+    'and',
+    'ta',
+    'trading',
+    'as',
+])
+
+/**
+ * Branch text that lived after the clean supplier name in a slip title.
+ * Legal leftovers such as "(Pty) Ltd" are not a branch.
+ */
+export function extractBranchSuffix(title: string, cleanName: string): string | null {
+    const rawTitle = (title || '').trim()
+    const clean = (cleanName || '').trim()
+    if (!rawTitle || !clean) return null
+    if (!rawTitle.toLowerCase().startsWith(clean.toLowerCase())) return null
+    if (rawTitle.length <= clean.length) return null
+
+    const remainder = rawTitle.slice(clean.length).replace(/^[\s\-,:/]+/, '').trim()
+    if (remainder.length < 2) return null
+
+    const tokens = tokenizeSupplierName(remainder)
+    if (tokens.length === 0 || tokens.every((token) => LEGAL_SUFFIX_TOKENS.has(token))) {
+        return null
+    }
+    return remainder
+}
+
+function placeSharesBranch(place: string, branch: string): boolean {
+    const placeTokens = new Set(tokenizeSupplierName(place))
+    return tokenizeSupplierName(branch).some((token) => token.length >= 4 && placeTokens.has(token))
+}
+
+export interface PlannedSupplierRename {
+    title: string
+    place: string | null
+    changed: boolean
+}
+
+/**
+ * Plan a title cleanup without dropping a branch that lived in the title.
+ * A real suburb already stored in place is kept. The branch is added beside it
+ * when place does not already mention it. Otherwise the branch moves into place.
+ */
+export function planSupplierRename(
+    slip: { title?: string | null; place?: string | null },
+    cleanName: string
+): PlannedSupplierRename {
+    const clean = (cleanName || '').trim()
+    const title = (slip.title || '').trim()
+    const place = (slip.place || '').trim()
+    const branch = extractBranchSuffix(title, clean)
+
+    let nextPlace = place
+    const placeIsRealSuburb =
+        place.length > 0 &&
+        place.toLowerCase() !== title.toLowerCase() &&
+        place.toLowerCase() !== clean.toLowerCase()
+
+    if (branch) {
+        if (!placeIsRealSuburb) {
+            nextPlace = branch
+        } else if (!placeSharesBranch(place, branch)) {
+            nextPlace = `${branch}, ${place}`
+        }
+    }
+
+    return {
+        title: clean,
+        place: nextPlace || null,
+        changed: title !== clean || (place || '') !== (nextPlace || ''),
+    }
+}
+
+export function namesMatchingSupplier(
+    names: string[],
+    cleanName: string
+): { accepted: string[]; rejected: string[] } {
+    const clean = (cleanName || '').trim()
+    const accepted: string[] = []
+    const rejected: string[] = []
+    const seen = new Set<string>()
+
+    for (const raw of names) {
+        const name = (raw || '').trim()
+        if (!name) continue
+        const key = name.toLowerCase()
+        if (seen.has(key)) continue
+        seen.add(key)
+        if (!clean || !(name.toLowerCase() === clean.toLowerCase() || isSameSupplier(name, clean))) {
+            rejected.push(name)
+            continue
+        }
+        accepted.push(name)
+    }
+
+    return { accepted, rejected }
+}
+
+export type MergeScope =
+    | { kind: 'own'; userId: string }
+    | { kind: 'company'; companyId: string }
+    | { kind: 'forbidden'; reason: string }
+
+/**
+ * Own slips only, unless a company admin explicitly opts into the whole company.
+ * Contributors, accountants, and plain users never receive company scope.
+ */
+export function resolveMergeScope(input: {
+    role?: string | null
+    userId: string
+    companyId?: string | null
+    includeCompanyMembers?: boolean
+}): MergeScope {
+    if (input.role === 'ACCOUNTANT') {
+        return { kind: 'forbidden', reason: 'Accountants cannot modify slips' }
+    }
+
+    const isCompanyAdmin =
+        (input.role === 'COMPANY_ADMIN' || input.role === 'ADMIN') && !!input.companyId
+
+    if (input.includeCompanyMembers && isCompanyAdmin && input.companyId) {
+        return { kind: 'company', companyId: input.companyId }
+    }
+
+    return { kind: 'own', userId: input.userId }
+}
