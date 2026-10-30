@@ -1,17 +1,24 @@
 'use client'
 
-import { useState } from 'react'
-import { signIn } from 'next-auth/react'
+import { useState, useEffect } from 'react'
+import { signIn, useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Logo from '../components/Logo'
 
 export default function LoginPage() {
     const router = useRouter()
+    const { status } = useSession()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
+
+    useEffect(() => {
+        if (status === 'authenticated') {
+            router.replace('/dashboard')
+        }
+    }, [status, router])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -56,11 +63,15 @@ export default function LoginPage() {
                         )}
 
                         <div className="form-control w-full">
-                            <label className="label">
+                            <label htmlFor="email" className="label">
                                 <span className="label-text font-medium text-gray-700">Email</span>
                             </label>
                             <input
+                                id="email"
+                                name="email"
                                 type="email"
+                                autoComplete="username"
+                                spellCheck={false}
                                 className="input input-bordered w-full bg-white focus:border-brand-teal focus:ring-1 focus:ring-brand-teal"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
@@ -70,11 +81,14 @@ export default function LoginPage() {
                         </div>
 
                         <div className="form-control w-full">
-                            <label className="label">
+                            <label htmlFor="password" className="label">
                                 <span className="label-text font-medium text-gray-700">Password</span>
                             </label>
                             <input
+                                id="password"
+                                name="password"
                                 type="password"
+                                autoComplete="current-password"
                                 className="input input-bordered w-full bg-white focus:border-brand-teal focus:ring-1 focus:ring-brand-teal"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}

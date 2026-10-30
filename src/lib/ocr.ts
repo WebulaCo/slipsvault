@@ -7,6 +7,7 @@ import {
     isGeminiCapacityError,
     receiptThinkingConfig,
 } from "./analysisLimits";
+import { ALL_CATEGORIES } from "./categories";
 
 export const DEFAULT_GEMINI_MODEL = "gemini-3.8-flash";
 /** Stable, low-latency model with image input and structured JSON. Not the overloaded 3.8 Flash tier. */
@@ -60,7 +61,7 @@ const SLIP_PROMPT = `
             - amountAfterTax: The total amount paid (number).
             - currency: The currency symbol (e.g., R, $, €).
             - summary: A brief summary of the items purchased (max 200 chars).
-            - tag: Choose EXACTLY ONE category from this list: Food, Transport, Groceries, Utilities, Shopping, Health, Entertainment, Travel, Office Supplies, Accommodation, Other.
+            - tag: Choose EXACTLY ONE category from this list: ${ALL_CATEGORIES.join(", ")}.
             
             Return ONLY the JSON object conforming to the schema.
         `;
@@ -83,19 +84,7 @@ function slipGenerationConfig(modelName: string): GenerationConfig {
                 tag: {
                     type: SchemaType.STRING,
                     format: "enum",
-                    enum: [
-                        "Food",
-                        "Transport",
-                        "Groceries",
-                        "Utilities",
-                        "Shopping",
-                        "Health",
-                        "Entertainment",
-                        "Travel",
-                        "Office Supplies",
-                        "Accommodation",
-                        "Other"
-                    ]
+                    enum: ALL_CATEGORIES
                 }
             },
             required: ["place", "date", "amountAfterTax", "currency", "summary", "tag"]
@@ -184,7 +173,7 @@ export async function analyzeImageWithGrok(buffer: Buffer, mimeType: string = "i
             - amountAfterTax: The total amount paid (number).
             - currency: The currency symbol (e.g., R, $, €).
             - summary: A brief summary of the items purchased (max 200 chars).
-            - tag: Choose EXACTLY ONE category from this list: Food, Transport, Groceries, Utilities, Shopping, Health, Entertainment, Travel, Office Supplies, Accommodation, Other.
+            - tag: Choose EXACTLY ONE category from this list: ${ALL_CATEGORIES.join(", ")}.
             
             Return ONLY a valid JSON object. Do not include markdown code block formatting (no \`\`\`json).
         `;

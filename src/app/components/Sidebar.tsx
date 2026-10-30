@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Receipt, Search, Settings, LogOut, PlusCircle, Hash, Menu, X, Bell } from 'lucide-react'
+import { LayoutDashboard, Receipt, Store, Search, Settings, LogOut, PlusCircle, Hash, Menu, X, Bell } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 import Logo from './Logo'
 
@@ -19,6 +19,7 @@ export default function Sidebar({ user, tags, unreadNotificationsCount = 0 }: Si
     const navItems = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
         { name: 'All Slips', href: '/dashboard/slips', icon: Receipt },
+        { name: 'Suppliers', href: '/dashboard/suppliers', icon: Store },
         { name: 'Search', href: '/dashboard/search', icon: Search },
         { name: 'Notifications', href: '/dashboard/notifications', icon: Bell },
     ]

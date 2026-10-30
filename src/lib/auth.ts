@@ -8,6 +8,11 @@ console.log("DEBUG: NEXTAUTH_SECRET is set:", !!process.env.NEXTAUTH_SECRET);
 export const authOptions: NextAuthOptions = {
     session: {
         strategy: "jwt",
+        maxAge: 365 * 24 * 60 * 60, // Keep user logged in for 365 days
+        updateAge: 24 * 60 * 60, // Refresh session expiry every 24 hours
+    },
+    jwt: {
+        maxAge: 365 * 24 * 60 * 60, // 365 days
     },
     secret: process.env.NEXTAUTH_SECRET,
     pages: {

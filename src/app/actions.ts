@@ -83,11 +83,27 @@ export async function analyzeSlip(formData: FormData) {
             return { success: false, url: outcome.url, error: errorMessage(outcome.error) };
         }
 
+        let duplicate = null;
+        const extracted = outcome.result.data;
+        if (extracted?.date && typeof extracted?.amountAfterTax === 'number' && extracted.amountAfterTax > 0) {
+            try {
+                duplicate = await checkForDuplicate({
+                    title: extracted.place || '',
+                    place: extracted.place || '',
+                    date: extracted.date,
+                    amount: extracted.amountAfterTax,
+                });
+            } catch (dupErr) {
+                console.error("Duplicate check during analysis failed:", dupErr);
+            }
+        }
+
         return {
             success: true,
             url: outcome.url,
             data: outcome.result.data,
             usedGrok: outcome.result.usedGrok,
+            duplicate,
         }
     } catch (error: unknown) {
         return { success: false, error: errorMessage(error) };
@@ -131,6 +147,22 @@ export async function createSlip(formData: FormData) {
 
     if (!title) {
         throw new Error("Title is required")
+    }
+
+    const ignoreDuplicate = formData.get('ignoreDuplicate') === 'on'
+    let existingDuplicate = null
+    if (dateStr && amountAfterTax && amountAfterTax > 0) {
+        existingDuplicate = await checkForDuplicate({
+            title,
+            place,
+            date: dateStr,
+            amount: amountAfterTax,
+        })
+        if (existingDuplicate && !ignoreDuplicate) {
+            throw new Error(
+                `Duplicate slip detected: Matches existing slip "${existingDuplicate.title}". Please tick "Confirm upload anyway" to save.`
+            )
+        }
     }
 
     // We only support one tag now, but the schema supports many.
@@ -431,51 +463,84 @@ export async function deleteSlip(id: string) {
     redirect('/dashboard')
 }
 
-export async function checkForDuplicate(data: { place: string, date: string, amount: number }) {
+export async function checkForDuplicate(data: {
+    title?: string
+    place?: string
+    date: string
+    amount: number
+    excludeId?: string
+}) {
     const session = await getServerSession(authOptions)
     if (!session) return null
 
-    const { place, date, amount } = data
-    if (!place || !date || !amount) return null
+    const { title, place, date, amount, excludeId } = data
+    if (!date || typeof amount !== 'number' || isNaN(amount) || amount <= 0) return null
+
+    const parsedDate = new Date(date)
+    if (isNaN(parsedDate.getTime())) return null
+
+    // Match across the entire calendar day (UTC) so timezone offsets or time parts never break matching
+    const dateKey = parsedDate.toISOString().split('T')[0]
+    const startOfDay = new Date(`${dateKey}T00:00:00.000Z`)
+    const endOfDay = new Date(`${dateKey}T23:59:59.999Z`)
 
     const companyId = session.user.companyId
-    const whereClause = companyId
-        ? {
-            user: { companyId: companyId },
-            amountAfterTax: amount,
-            date: new Date(date),
-            place: {
-                contains: place,
-                mode: 'insensitive' as const
-            }
-          }
-        : {
-            userId: session.user.id,
-            amountAfterTax: amount,
-            date: new Date(date),
-            place: {
-                contains: place,
-                mode: 'insensitive' as const
-            }
-          }
+    const baseWhere: any = companyId
+        ? { user: { companyId } }
+        : { userId: session.user.id }
 
-    const duplicates = await prisma.slip.findMany({
-        where: whereClause,
+    if (excludeId) {
+        baseWhere.id = { not: excludeId }
+    }
+
+    const candidates = await prisma.slip.findMany({
+        where: {
+            ...baseWhere,
+            date: {
+                gte: startOfDay,
+                lte: endOfDay,
+            },
+            amountAfterTax: {
+                gte: amount - 0.01,
+                lte: amount + 0.01,
+            },
+        },
         select: {
             id: true,
             title: true,
+            place: true,
             date: true,
             amountAfterTax: true,
             user: {
                 select: {
                     name: true,
-                    email: true
-                }
-            }
-        }
+                    email: true,
+                },
+            },
+        },
+        orderBy: { createdAt: 'desc' },
     })
 
-    return duplicates.length > 0 ? duplicates[0] : null
+    if (candidates.length === 0) return null
+
+    // Prioritize candidate whose title or place shares words/substrings with input title/place
+    const searchTerms = [title, place]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter((w) => w.length >= 3)
+
+    if (searchTerms.length > 0) {
+        const bestMatch = candidates.find((c) => {
+            const target = `${c.title || ''} ${c.place || ''}`.toLowerCase()
+            return searchTerms.some((term) => target.includes(term))
+        })
+        if (bestMatch) return bestMatch
+    }
+
+    // Same calendar day and exact same amount is still flagged as a duplicate candidate
+    return candidates[0]
 }
 
 export async function exportSlips() {

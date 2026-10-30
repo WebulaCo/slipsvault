@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { analyzeSlip, deleteSlip, checkForDuplicate } from '@/app/actions'
 import { ANALYSIS_GAVE_UP_MESSAGE, CLIENT_ANALYSIS_TIMEOUT_MS, isTimeoutError, withTimeout } from '@/lib/analysisLimits'
+import { ALL_CATEGORIES, CATEGORY_GROUPS } from '@/lib/categories'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { UploadCloud, X, MapPin, Hash, Camera } from 'lucide-react'
@@ -60,16 +61,13 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
     const [error, setError] = useState('')
     const [infoMessage, setInfoMessage] = useState('')
     const [duplicateWarning, setDuplicateWarning] = useState<{ id: string, title: string, userName?: string } | null>(null)
+    const [ignoreDuplicateChecked, setIgnoreDuplicateChecked] = useState(false)
 
-    const categories = [
-        'Food', 'Transport', 'Groceries', 'Utilities', 'Shopping',
-        'Health', 'Entertainment', 'Travel', 'Office Supplies',
-        'Accommodation', 'Other'
-    ]
+    const categories = ALL_CATEGORIES
 
     useEffect(() => {
         const check = async () => {
-            if (place && date && amount) {
+            if (date && amount) {
                 const parsedAmount = parseFloat(amount);
                 if (isNaN(parsedAmount) || parsedAmount <= 0) {
                     setDuplicateWarning(null);
@@ -78,9 +76,11 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                 
                 try {
                     const duplicate = await checkForDuplicate({
+                        title,
                         place,
                         date,
-                        amount: parsedAmount
+                        amount: parsedAmount,
+                        excludeId: initialData?.id
                     });
                     
                     if (duplicate && duplicate.id !== initialData?.id) {
@@ -91,18 +91,20 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                         });
                     } else {
                         setDuplicateWarning(null);
+                        setIgnoreDuplicateChecked(false);
                     }
                 } catch (err) {
                     console.error("Duplicate check failed:", err);
                 }
             } else {
                 setDuplicateWarning(null);
+                setIgnoreDuplicateChecked(false);
             }
         };
 
-        const timer = setTimeout(check, 500); // Debounce
+        const timer = setTimeout(check, 350); // Debounce
         return () => clearTimeout(timer);
-    }, [place, date, amount, initialData?.id]);
+    }, [title, place, date, amount, initialData?.id]);
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement> | File) => {
         let selectedFile: File | undefined
@@ -154,6 +156,14 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
 
             if (result.usedGrok) {
                 setInfoMessage("The first AI was on holiday, so we tried its handsome cousin (Grok) to analyze your slip instead!")
+            }
+
+            if (result.duplicate && result.duplicate.id !== initialData?.id) {
+                setDuplicateWarning({
+                    id: result.duplicate.id,
+                    title: result.duplicate.title,
+                    userName: result.duplicate.user?.name || result.duplicate.user?.email || undefined
+                })
             }
 
             const hasData = result.data && (result.data.place || result.data.date || result.data.amountAfterTax);
@@ -234,6 +244,37 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                 }
             }
             return
+        }
+
+        // Verify duplicate check before creating a new slip if not explicitly confirmed
+        if (!ignoreDuplicateChecked && date && amount) {
+            const parsedAmount = parseFloat(amount)
+            if (!isNaN(parsedAmount) && parsedAmount > 0) {
+                try {
+                    const dup = await checkForDuplicate({
+                        title,
+                        place,
+                        date,
+                        amount: parsedAmount,
+                    })
+                    if (dup) {
+                        setDuplicateWarning({
+                            id: dup.id,
+                            title: dup.title,
+                            userName: dup.user?.name || dup.user?.email || undefined,
+                        })
+                        setError('Duplicate slip detected! Please review the warning above or tick "Confirm upload anyway" to proceed.')
+                        setIsSubmitting(false)
+                        return
+                    }
+                } catch (dupErr) {
+                    console.error("Pre-submit duplicate check failed:", dupErr)
+                }
+            }
+        }
+
+        if (ignoreDuplicateChecked) {
+            formData.set('ignoreDuplicate', 'on')
         }
 
         // Proceed directly to action
@@ -328,6 +369,13 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                             <input 
                                 type="checkbox" 
                                 name="ignoreDuplicate" 
+                                checked={ignoreDuplicateChecked}
+                                onChange={(e) => {
+                                    setIgnoreDuplicateChecked(e.target.checked)
+                                    if (e.target.checked && error.includes('Duplicate slip detected')) {
+                                        setError('')
+                                    }
+                                }}
                                 className="checkbox border-white [--chkbg:theme(colors.amber.500)] [--chkfg:white]" 
                                 required 
                             />
@@ -475,7 +523,7 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                     {/* Tag Select */}
                     <div className="form-control w-full">
                         <label className="label">
-                            <span className={`label-text font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Category</span>
+                            <span className={`label-text font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Category / Subcategory</span>
                         </label>
                         <div className="relative">
                             <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
@@ -486,8 +534,15 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                                 onChange={(e) => setTag(e.target.value)}
                             >
                                 <option value="" disabled>Select a category</option>
-                                {categories.map((cat) => (
-                                    <option key={cat} value={cat}>{cat}</option>
+                                {tag && !categories.includes(tag) && (
+                                    <option value={tag}>{tag}</option>
+                                )}
+                                {CATEGORY_GROUPS.map((group) => (
+                                    <optgroup key={group.group} label={group.group}>
+                                        {group.items.map((cat) => (
+                                            <option key={cat} value={cat}>{cat}</option>
+                                        ))}
+                                    </optgroup>
                                 ))}
                             </select>
                             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
