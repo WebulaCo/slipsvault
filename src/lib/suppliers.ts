@@ -55,6 +55,18 @@ const GENERIC_TITLES = new Set([
     'unspecified',
 ])
 
+/** Short everyday words that must not swallow other merchants. */
+const WEAK_BRAND_TOKENS = new Set(['cafe', 'fuel', 'food', 'shop'])
+
+const ALIAS_PHRASES: Array<[string, string]> = [
+    ['pick n pay', 'pick n pay'],
+    ['dis chem', 'dischem'],
+    ['dischem', 'dischem'],
+    ['pnp', 'pick n pay'],
+    ['kfc', 'kfc'],
+    ['bp', 'bp'],
+]
+
 /**
  * Normalizes a supplier string into lowercase alphanumeric tokens,
  * stripping punctuation and legal suffixes like "(Pty) Ltd".
@@ -65,6 +77,7 @@ export function tokenizeSupplierName(raw: string): string[] {
         .toLowerCase()
         .replace(/\(pty\)\s*ltd/gi, ' ')
         .replace(/\bt\/a\b/gi, ' ')
+        .replace(/['’`]/g, '')
         .replace(/[^a-z0-9\s]/g, ' ')
         .trim()
 
@@ -83,6 +96,19 @@ export function getCoreBrandTokens(raw: string): string[] {
 
     const filtered = tokens.filter((t, idx) => idx === 0 || !LEGAL_AND_BRANCH_NOISE.has(t))
     return filtered.length > 0 ? filtered : [tokens[0]]
+}
+
+function aliasKey(raw: string): string | null {
+    const joined = tokenizeSupplierName(raw).join(' ')
+    if (!joined) return null
+    for (const [phrase, key] of ALIAS_PHRASES) {
+        if (joined === phrase || joined.startsWith(`${phrase} `)) return key
+    }
+    return null
+}
+
+function isWeakBrandToken(token: string): boolean {
+    return WEAK_BRAND_TOKENS.has(token) || GENERIC_TITLES.has(token) || LEGAL_AND_BRANCH_NOISE.has(token)
 }
 
 /**
@@ -113,6 +139,65 @@ export function levenshteinDistance(a: string, b: string): number {
         }
     }
     return dp[s.length][t.length]
+}
+
+const STRONG_NOTE_TOKENS = new Set([
+    'lunch',
+    'dinner',
+    'breakfast',
+    'brunch',
+    'client',
+    'meeting',
+    'coffee',
+    'personal',
+])
+
+const WEAK_NOTE_TOKENS = new Set([
+    'with',
+    'fuel',
+    'food',
+    'groceries',
+    'shopping',
+    'hardware',
+])
+
+/**
+ * When the title reads like a note and place looks like the merchant,
+ * suggest using place as the supplier name. Returns null when they already match.
+ */
+export function suggestPlaceAsSupplier(slip: {
+    title?: string | null
+    place?: string | null
+}): string | null {
+    const title = (slip.title || '').trim()
+    const place = (slip.place || '').trim()
+    if (!title || !place) return null
+    if (title.toLowerCase() === place.toLowerCase()) return null
+    if (isSameSupplier(title, place)) return null
+
+    const tokens = tokenizeSupplierName(title)
+    if (tokens.length === 0) return null
+    const hasStrongNote = tokens.some((token) => STRONG_NOTE_TOKENS.has(token))
+    const onlyNoteWords = tokens.every((token) => WEAK_NOTE_TOKENS.has(token) || token.length <= 2)
+    if (!hasStrongNote && !onlyNoteWords) return null
+    return place
+}
+
+export function clusterSupplierTitles(titles: string[]): string[][] {
+    const cleaned = titles.map((title) => (title || '').trim()).filter(Boolean)
+    const canonicalMap = buildCanonicalSupplierMap(cleaned)
+    const groups = new Map<string, Map<string, string>>()
+
+    for (const title of cleaned) {
+        const canonical = canonicalMap.get(title.toLowerCase()) || title
+        const names = groups.get(canonical) || new Map<string, string>()
+        names.set(title.toLowerCase(), title)
+        groups.set(canonical, names)
+    }
+
+    return Array.from(groups.values())
+        .map((names) => Array.from(names.values()))
+        .filter((names) => names.length >= 2)
 }
 
 /**
@@ -153,29 +238,45 @@ export function isSameSupplier(nameA: string, nameB: string): boolean {
     const joinedB = tokensB.join(' ')
     if (joinedA === joinedB) return true
 
+    const aliasA = aliasKey(a)
+    const aliasB = aliasKey(b)
+    if (aliasA && aliasA === aliasB) return true
+
     const coreA = getCoreBrandTokens(a).join(' ')
     const coreB = getCoreBrandTokens(b).join(' ')
-    if (coreA && coreB && coreA === coreB) return true
+    if (coreA && coreB && coreA === coreB && !isWeakBrandToken(tokensA[0]) && !isWeakBrandToken(tokensB[0])) {
+        return true
+    }
 
-    // Single-word typo check for brands >= 5 chars (e.g. "Woolworth" vs "Woolworths")
+    // One-character typos only for longer single-word brands (Woolworth / Woolworths).
     if (
         tokensA.length === 1 &&
         tokensB.length === 1 &&
-        Math.min(joinedA.length, joinedB.length) >= 5
+        Math.min(joinedA.length, joinedB.length) >= 8 &&
+        Math.abs(joinedA.length - joinedB.length) <= 1 &&
+        levenshteinDistance(joinedA, joinedB) <= 1
     ) {
-        if (levenshteinDistance(joinedA, joinedB) <= 1) return true
+        return true
     }
 
     // Prefix brand match: e.g. "Engen" vs "Engen Blouberg Motors"
-    // or "Woolworths" vs "Woolworths Food Gardens"
     const shorter = tokensA.length <= tokensB.length ? tokensA : tokensB
     const longer = tokensA.length <= tokensB.length ? tokensB : tokensA
 
     if (
         shorter.length >= 1 &&
-        shorter[0].length >= 4 &&
-        !GENERIC_TITLES.has(shorter[0]) &&
+        shorter[0].length >= 5 &&
+        !isWeakBrandToken(shorter[0]) &&
         shorter.every((tok, idx) => longer[idx] === tok)
+    ) {
+        return true
+    }
+
+    // Same distinctive first token: "Engen Blouberg" and "Engen Hermanus".
+    if (
+        tokensA[0] === tokensB[0] &&
+        tokensA[0].length >= 5 &&
+        !isWeakBrandToken(tokensA[0])
     ) {
         return true
     }
@@ -260,29 +361,41 @@ export function findMatchingExistingSupplier(
 }
 
 /**
- * Given a list of raw supplier names from all slips in the vault, builds a canonical map
- * that groups variant supplier names (e.g. "Engen" and "Engen Blouberg Motors") under the
- * shortest/cleanest canonical supplier name ("Engen").
+ * Groups variant supplier names. The label for a group is the name that appears
+ * most often. Ties prefer fewer words, then the shorter string.
  */
 export function buildCanonicalSupplierMap(rawNames: string[]): Map<string, string> {
-    const uniqueClean = Array.from(
-        new Set(rawNames.map((n) => (n || '').trim()).filter(Boolean))
-    )
+    const counts = new Map<string, number>()
+    const displayByKey = new Map<string, string>()
 
-    // Sort shortest first so base brand names ("Engen") become the canonical representative
-    const sorted = [...uniqueClean].sort((a, b) => a.length - b.length || a.localeCompare(b))
-    const canonicalClusters: string[] = []
-    const rawToCanonical = new Map<string, string>()
+    for (const raw of rawNames) {
+        const name = (raw || '').trim()
+        if (!name) continue
+        const key = name.toLowerCase()
+        counts.set(key, (counts.get(key) || 0) + 1)
+        if (!displayByKey.has(key)) displayByKey.set(key, name)
+    }
 
-    for (const name of sorted) {
-        const matchedCanonical = canonicalClusters.find((canon) =>
-            isSameSupplier(name, canon)
+    const clusters: string[][] = []
+    for (const name of displayByKey.values()) {
+        const cluster = clusters.find((members) =>
+            members.some((member) => isSameSupplier(name, member))
         )
-        if (matchedCanonical) {
-            rawToCanonical.set(name.toLowerCase(), matchedCanonical)
-        } else {
-            canonicalClusters.push(name)
-            rawToCanonical.set(name.toLowerCase(), name)
+        if (cluster) cluster.push(name)
+        else clusters.push([name])
+    }
+
+    const rawToCanonical = new Map<string, string>()
+    for (const members of clusters) {
+        const winner = [...members].sort((a, b) => {
+            const countDiff = (counts.get(b.toLowerCase()) || 0) - (counts.get(a.toLowerCase()) || 0)
+            if (countDiff !== 0) return countDiff
+            const tokenDiff = tokenizeSupplierName(a).length - tokenizeSupplierName(b).length
+            if (tokenDiff !== 0) return tokenDiff
+            return a.length - b.length || a.localeCompare(b)
+        })[0]
+        for (const member of members) {
+            rawToCanonical.set(member.toLowerCase(), winner)
         }
     }
 
