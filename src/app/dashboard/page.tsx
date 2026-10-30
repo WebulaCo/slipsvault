@@ -3,13 +3,15 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import SlipList from "@/app/components/SlipList"
 import DashboardCharts from "@/app/components/DashboardCharts"
+import DashboardMonthSelect from "@/app/components/DashboardMonthSelect"
 import {
     buildCanonicalSupplierMap,
     formatMonthKey,
     getRawSlipSupplier,
     getSlipMonthKey,
 } from "@/lib/suppliers"
-import { Calendar, Store, Tag, Receipt, ArrowRight, X, Plus } from "lucide-react"
+import { formatAmount, sharedCurrency } from "@/lib/money"
+import { Store, ArrowRight, Plus } from "lucide-react"
 import Link from "next/link"
 
 interface DashboardPageProps {
@@ -107,78 +109,19 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         return canonicalSupplierMap.get(raw.toLowerCase()) || raw
     }
 
-    // Group all slips by canonical YYYY-MM month key for timeline & monthly breakdown
-    const monthTotalsMap = new Map<
-        string,
-        {
-            monthKey: string
-            total: number
-            count: number
-            categories: Record<string, number>
-            suppliers: Record<string, number>
-        }
-    >()
-    const allCategoriesSet = new Set<string>()
-    const globalTagAmounts: Record<string, number> = {}
+    const monthTotalsMap = new Map<string, { total: number; count: number }>()
 
     for (const slip of allSlips) {
         const monthKey = getSlipMonthKey(slip)
-        const amount = slip.amountAfterTax || 0
-        const supplierName = getCanonicalSupplier(slip)
-
-        let entry = monthTotalsMap.get(monthKey)
-        if (!entry) {
-            entry = {
-                monthKey,
-                total: 0,
-                count: 0,
-                categories: {},
-                suppliers: {},
-            }
-            monthTotalsMap.set(monthKey, entry)
-        }
-
-        entry.total += amount
+        const entry = monthTotalsMap.get(monthKey) || { total: 0, count: 0 }
+        entry.total += slip.amountAfterTax || 0
         entry.count += 1
-        entry.suppliers[supplierName] = (entry.suppliers[supplierName] || 0) + amount
-
-        if (slip.tags.length > 0) {
-            const amountPerTag = amount / slip.tags.length
-            for (const tag of slip.tags) {
-                entry.categories[tag.name] = (entry.categories[tag.name] || 0) + amountPerTag
-                globalTagAmounts[tag.name] = (globalTagAmounts[tag.name] || 0) + amountPerTag
-                allCategoriesSet.add(tag.name)
-            }
-        } else {
-            entry.categories['Uncategorized'] = (entry.categories['Uncategorized'] || 0) + amount
-            globalTagAmounts['Uncategorized'] = (globalTagAmounts['Uncategorized'] || 0) + amount
-            allCategoriesSet.add('Uncategorized')
-        }
+        monthTotalsMap.set(monthKey, entry)
     }
 
-    const sortedCategories = Array.from(allCategoriesSet).sort(
-        (a, b) => (globalTagAmounts[b] || 0) - (globalTagAmounts[a] || 0)
+    const sortedMonthKeysDesc = Array.from(monthTotalsMap.keys()).sort((a, b) =>
+        b.localeCompare(a)
     )
-
-    // Sort months chronologically (oldest -> newest) for the bar chart
-    const sortedMonthKeysAsc = Array.from(monthTotalsMap.keys()).sort((a, b) =>
-        a.localeCompare(b)
-    )
-    // And newest -> oldest for the monthly filter pills & table
-    const sortedMonthKeysDesc = [...sortedMonthKeysAsc].reverse()
-
-    const timelineData = sortedMonthKeysAsc.map((mKey) => {
-        const entry = monthTotalsMap.get(mKey)!
-        const row: { monthKey: string; name: string; total: number; [k: string]: any } = {
-            monthKey: mKey,
-            name: formatMonthKey(mKey, 'short'),
-            total: Number(entry.total.toFixed(2)),
-        }
-        for (const cat of sortedCategories) {
-            row[cat] = Number((entry.categories[cat] || 0).toFixed(2))
-        }
-        return row
-    })
 
     // Filter slips by `activeMonth` if a month is selected on the dashboard
     const scopedSlips = activeMonth
@@ -187,7 +130,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
     const totalSlips = scopedSlips.length
     const totalValue = scopedSlips.reduce((sum, slip) => sum + (slip.amountAfterTax || 0), 0)
-    const averageValue = totalSlips > 0 ? totalValue / totalSlips : 0
 
     // Calculate Category & Supplier breakdown for the active scope
     const scopedTagAmounts: Record<string, number> = {}
@@ -226,323 +168,104 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         }))
         .sort((a, b) => b.amount - a.amount)
 
-    const topSupplierEntry = topSuppliers[0] || null
+    const currency = sharedCurrency(scopedSlips.map((slip) => slip.currency))
+    const monthOptions = sortedMonthKeysDesc.map((mKey) => ({
+        value: mKey,
+        label: `${formatMonthKey(mKey, 'long')} (${monthTotalsMap.get(mKey)!.count})`,
+    }))
     const displayedSlips = scopedSlips.slice(0, 6)
+    const supplierHref = activeMonth
+        ? `/dashboard/suppliers?month=${encodeURIComponent(activeMonth)}`
+        : '/dashboard/suppliers'
 
     return (
         <div>
-            {/* Header & Quick Actions */}
-            <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <header className="flex flex-col gap-3 mb-6">
                 <div>
                     <h1 className="text-xl font-bold mb-1 text-brand-navy">
                         Welcome back, {session.user.name || 'User'}
-                        {session.user.companyName && (
-                            <span className="text-brand-teal"> from {session.user.companyName}</span>
-                        )}
-                        !
                     </h1>
                     <p className="text-gray-500 text-sm">
                         {activeMonth
-                            ? `Showing spend & insights for ${formatMonthKey(activeMonth, 'long')}`
-                            : "Here's an overview of your spending by month, supplier, and category."}
+                            ? formatMonthKey(activeMonth, 'long')
+                            : 'Spend, categories, and a short look at suppliers.'}
                     </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row">
                     <Link
                         href="/dashboard/suppliers"
-                        className="btn btn-sm btn-outline border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white rounded-xl normal-case flex items-center gap-1.5"
+                        className="btn btn-sm btn-outline border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white rounded-xl normal-case min-h-11"
                     >
                         <Store size={16} />
-                        Suppliers Spend
+                        Suppliers
                     </Link>
                     <Link
                         href="/dashboard/create"
-                        className="btn btn-sm bg-brand-navy hover:bg-[#0d2e4d] text-white border-none rounded-xl normal-case flex items-center gap-1.5"
+                        className="btn btn-sm bg-brand-navy hover:bg-[#0d2e4d] text-white border-none rounded-xl normal-case min-h-11"
                     >
                         <Plus size={16} />
-                        New Slip
+                        New slip
                     </Link>
                 </div>
             </header>
 
-            {/* Month Filter Bar */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3.5 mb-6 flex items-center justify-between gap-3 flex-wrap">
-                <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 flex items-center gap-1 mr-1">
-                        <Calendar size={14} className="text-brand-teal" />
-                        Period:
-                    </span>
-                    <Link
-                        href="/dashboard"
-                        className={`btn btn-xs rounded-full normal-case ${
-                            !activeMonth
-                                ? 'bg-brand-navy text-white border-brand-navy hover:bg-brand-navy'
-                                : 'btn-outline border-gray-200 text-gray-600 hover:border-brand-navy'
-                        }`}
-                    >
-                        All Time ({allSlips.length})
-                    </Link>
-                    {sortedMonthKeysDesc.map((mKey) => {
-                        const mEntry = monthTotalsMap.get(mKey)!
-                        const isSelected = activeMonth === mKey
-                        return (
-                            <Link
-                                key={mKey}
-                                href={
-                                    isSelected
-                                        ? '/dashboard'
-                                        : `/dashboard?month=${encodeURIComponent(mKey)}`
-                                }
-                                className={`btn btn-xs rounded-full normal-case ${
-                                    isSelected
-                                        ? 'bg-brand-teal text-white border-brand-teal hover:bg-brand-teal'
-                                        : 'btn-outline border-gray-200 text-gray-600 hover:border-brand-teal'
-                                }`}
-                            >
-                                {formatMonthKey(mKey, 'short')} ({mEntry.count})
-                            </Link>
-                        )
-                    })}
-                </div>
-                {activeMonth && (
-                    <Link
-                        href="/dashboard"
-                        className="btn btn-xs btn-ghost text-red-500 hover:bg-red-50 rounded-full normal-case flex items-center gap-1"
-                    >
-                        <X size={13} />
-                        Clear Month Filter
-                    </Link>
-                )}
-            </div>
+            <DashboardMonthSelect months={monthOptions} activeMonth={activeMonth} />
 
-            {/* KPI Stats Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="card bg-white shadow-sm border border-gray-100 rounded-xl">
                     <div className="card-body p-4">
-                        <h3 className="text-xs font-medium text-gray-500 mb-1">
-                            {activeMonth ? `Spend (${formatMonthKey(activeMonth, 'short')})` : 'Total Spend'}
-                        </h3>
-                        <div className="text-2xl font-bold text-brand-navy font-mono">
-                            R{totalValue.toFixed(2)}
+                        <h2 className="text-xs font-medium text-gray-500 mb-1">Spend</h2>
+                        <div className="text-xl font-bold text-brand-navy font-mono break-words">
+                            {formatAmount(totalValue, currency)}
                         </div>
                         <div className="text-xs text-gray-400 mt-0.5">
-                            {totalSlips} {totalSlips === 1 ? 'slip' : 'slips'} • Avg R{averageValue.toFixed(2)}
+                            {totalSlips} {totalSlips === 1 ? 'slip' : 'slips'}
                         </div>
                     </div>
                 </div>
-
                 <div className="card bg-white shadow-sm border border-gray-100 rounded-xl">
                     <div className="card-body p-4">
-                        <h3 className="text-xs font-medium text-gray-500 mb-1">Top Supplier</h3>
-                        <div
-                            className="text-lg font-bold text-brand-teal truncate"
-                            title={topSupplierEntry ? topSupplierEntry.name : 'N/A'}
-                        >
-                            {topSupplierEntry ? topSupplierEntry.name : 'N/A'}
+                        <h2 className="text-xs font-medium text-gray-500 mb-1">Top category</h2>
+                        <div className="text-lg font-bold text-gray-900 truncate">
+                            {topCategoryEntry ? topCategoryEntry.name : 'None'}
                         </div>
                         <div className="text-xs text-gray-400 font-mono mt-0.5">
-                            {topSupplierEntry
-                                ? `R${topSupplierEntry.amount.toFixed(2)} (${topSupplierEntry.count} ${
-                                      topSupplierEntry.count === 1 ? 'slip' : 'slips'
-                                  })`
-                                : 'No supplier data'}
+                            {topCategoryEntry ? formatAmount(topCategoryEntry.value, currency) : 'No categories'}
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div className="card bg-white shadow-sm border border-gray-100 rounded-xl">
-                    <div className="card-body p-4">
-                        <h3 className="text-xs font-medium text-gray-500 mb-1">Top Category</h3>
-                        <div
-                            className="text-lg font-bold text-gray-900 truncate"
-                            title={topCategoryEntry ? topCategoryEntry.name : 'N/A'}
-                        >
-                            {topCategoryEntry ? topCategoryEntry.name : 'N/A'}
-                        </div>
-                        <div className="text-xs text-gray-400 font-mono mt-0.5">
-                            {topCategoryEntry ? `R${topCategoryEntry.value.toFixed(2)}` : 'No category data'}
-                        </div>
-                    </div>
+            <DashboardCharts categoryData={categoryData} currency={currency} />
+
+            <section className="mb-8">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                    <h2 className="text-base font-bold text-brand-navy m-0">Top suppliers</h2>
+                    <Link href={supplierHref} className="text-sm text-brand-teal font-medium inline-flex items-center gap-1 min-h-11">
+                        View all <ArrowRight size={14} />
+                    </Link>
                 </div>
-
-                <div className="card bg-white shadow-sm border border-gray-100 rounded-xl">
-                    <div className="card-body p-4">
-                        <h3 className="text-xs font-medium text-gray-500 mb-1">Active Suppliers</h3>
-                        <div className="text-2xl font-bold text-gray-900">{topSuppliers.length}</div>
+                <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-100">
+                    {topSuppliers.slice(0, 3).map((supplier) => (
                         <Link
-                            href={
-                                activeMonth
-                                    ? `/dashboard/suppliers?month=${encodeURIComponent(activeMonth)}`
-                                    : '/dashboard/suppliers'
-                            }
-                            className="text-xs text-brand-teal hover:underline font-medium mt-0.5 inline-flex items-center gap-1"
+                            key={supplier.name}
+                            href={`/dashboard/suppliers?supplier=${encodeURIComponent(supplier.name)}${
+                                activeMonth ? `&month=${encodeURIComponent(activeMonth)}` : ''
+                            }`}
+                            className="flex items-center justify-between gap-3 p-4 min-h-11"
                         >
-                            View all suppliers <ArrowRight size={12} />
+                            <span className="font-semibold text-brand-navy truncate">{supplier.name}</span>
+                            <span className="font-mono text-sm text-brand-navy shrink-0">
+                                {formatAmount(supplier.amount, currency)}
+                                <span className="text-gray-400 font-sans"> · {supplier.count}</span>
+                            </span>
                         </Link>
-                    </div>
+                    ))}
+                    {topSuppliers.length === 0 && (
+                        <p className="p-4 text-sm text-gray-400">No suppliers in this period.</p>
+                    )}
                 </div>
-            </div>
-
-            {/* Charts */}
-            <DashboardCharts
-                categoryData={categoryData}
-                timelineData={timelineData}
-                categories={sortedCategories}
-                activeMonth={activeMonth}
-            />
-
-            {/* Monthly Breakdown & Top Suppliers Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                {/* Spend Grouped by Month */}
-                <div className="card bg-white shadow-sm border border-gray-100 rounded-xl">
-                    <div className="card-body p-5">
-                        <div className="flex items-center justify-between mb-3">
-                            <div>
-                                <h2 className="text-base font-bold text-brand-navy flex items-center gap-2">
-                                    <Calendar size={18} className="text-brand-teal" />
-                                    Spend Grouped by Month
-                                </h2>
-                                <p className="text-xs text-gray-400">
-                                    Click any month to inspect its suppliers and slips
-                                </p>
-                            </div>
-                            <Link
-                                href="/dashboard/suppliers?view=monthly"
-                                className="text-xs font-medium text-brand-teal hover:underline flex items-center gap-1"
-                            >
-                                Monthly Suppliers <ArrowRight size={12} />
-                            </Link>
-                        </div>
-
-                        <div className="divide-y divide-gray-100">
-                            {sortedMonthKeysDesc.map((mKey) => {
-                                const mEntry = monthTotalsMap.get(mKey)!
-                                const topSupInMonth = Object.entries(mEntry.suppliers).sort(
-                                    (a, b) => b[1] - a[1]
-                                )[0]
-                                const isSelected = activeMonth === mKey
-
-                                return (
-                                    <div
-                                        key={mKey}
-                                        className={`py-3 px-2 rounded-lg transition-colors flex items-center justify-between gap-3 ${
-                                            isSelected ? 'bg-brand-teal/5' : 'hover:bg-gray-50'
-                                        }`}
-                                    >
-                                        <div className="min-w-0">
-                                            <div className="flex items-center gap-2">
-                                                <Link
-                                                    href={
-                                                        isSelected
-                                                            ? '/dashboard'
-                                                            : `/dashboard?month=${encodeURIComponent(mKey)}`
-                                                    }
-                                                    className="font-bold text-brand-navy hover:text-brand-teal text-sm"
-                                                >
-                                                    {formatMonthKey(mKey, 'long')}
-                                                </Link>
-                                                <span className="badge badge-xs bg-gray-100 text-gray-600 border-none">
-                                                    {mEntry.count} {mEntry.count === 1 ? 'slip' : 'slips'}
-                                                </span>
-                                            </div>
-                                            {topSupInMonth && (
-                                                <div className="text-xs text-gray-500 truncate mt-0.5">
-                                                    Top supplier: <strong>{topSupInMonth[0]}</strong> (R
-                                                    {topSupInMonth[1].toFixed(2)})
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="flex items-center gap-3 shrink-0">
-                                            <div className="text-right">
-                                                <div className="font-mono font-bold text-brand-navy text-sm">
-                                                    R{mEntry.total.toFixed(2)}
-                                                </div>
-                                            </div>
-                                            <Link
-                                                href={`/dashboard/suppliers?month=${encodeURIComponent(mKey)}`}
-                                                className="btn btn-xs btn-ghost text-brand-teal hover:bg-brand-teal/10 normal-case"
-                                                title="View suppliers for this month"
-                                            >
-                                                Suppliers
-                                            </Link>
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Top Suppliers in Selected Period */}
-                <div className="card bg-white shadow-sm border border-gray-100 rounded-xl">
-                    <div className="card-body p-5">
-                        <div className="flex items-center justify-between mb-3">
-                            <div>
-                                <h2 className="text-base font-bold text-brand-navy flex items-center gap-2">
-                                    <Store size={18} className="text-brand-teal" />
-                                    Top Suppliers {activeMonth ? `(${formatMonthKey(activeMonth, 'short')})` : ''}
-                                </h2>
-                                <p className="text-xs text-gray-400">
-                                    Automatically grouped across matching merchant branches
-                                </p>
-                            </div>
-                            <Link
-                                href={
-                                    activeMonth
-                                        ? `/dashboard/suppliers?month=${encodeURIComponent(activeMonth)}`
-                                        : '/dashboard/suppliers'
-                                }
-                                className="text-xs font-medium text-brand-teal hover:underline flex items-center gap-1"
-                            >
-                                View All <ArrowRight size={12} />
-                            </Link>
-                        </div>
-
-                        <div className="divide-y divide-gray-100">
-                            {topSuppliers.slice(0, 6).map((sup) => {
-                                const pct =
-                                    totalValue > 0
-                                        ? Math.min(100, Math.round((sup.amount / totalValue) * 100))
-                                        : 0
-                                return (
-                                    <div
-                                        key={sup.name}
-                                        className="py-3 px-2 hover:bg-gray-50 rounded-lg transition-colors flex items-center justify-between gap-3"
-                                    >
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex items-center justify-between mb-1">
-                                                <Link
-                                                    href={`/dashboard/suppliers?supplier=${encodeURIComponent(sup.name)}${
-                                                        activeMonth ? `&month=${encodeURIComponent(activeMonth)}` : ''
-                                                    }`}
-                                                    className="font-bold text-brand-navy hover:text-brand-teal text-sm truncate"
-                                                >
-                                                    {sup.name}
-                                                </Link>
-                                                <span className="font-mono font-bold text-brand-navy text-sm shrink-0 ml-2">
-                                                    R{sup.amount.toFixed(2)}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                                                    <div
-                                                        className="bg-brand-teal h-1.5 rounded-full"
-                                                        style={{ width: `${pct}%` }}
-                                                    />
-                                                </div>
-                                                <span className="text-xs text-gray-400 shrink-0">
-                                                    {sup.count} {sup.count === 1 ? 'slip' : 'slips'} ({pct}%)
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    </div>
-                </div>
-            </div>
+            </section>
 
             {/* Recent / Filtered Slips */}
             <section className="mb-20 md:mb-0">

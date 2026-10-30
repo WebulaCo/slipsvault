@@ -8,6 +8,7 @@ import {
     buildCanonicalSupplierMap,
     formatMonthKey,
     getRawSlipSupplier,
+    clusterSupplierTitles,
     getSlipMonthKey,
     isSameSupplier,
     stripSupplierPrefix,
@@ -141,26 +142,9 @@ export default async function SuppliersPage({ searchParams }: SuppliersPageProps
         return canonicalMap.get(raw.toLowerCase()) || raw
     }
 
-    // Names that the matcher already groups. The user picks the clean name later.
-    const titlesByCanonical = new Map<string, Set<string>>()
-    for (const slip of allSlips) {
-        const rawTitle = (slip.title || '').trim()
-        if (!rawTitle) continue
-        const canon = getCanonicalSupplier(slip)
-        const set = titlesByCanonical.get(canon) || new Set<string>()
-        set.add(rawTitle)
-        titlesByCanonical.set(canon, set)
-    }
-    const variantGroups = Array.from(titlesByCanonical.values())
-        .map((set) => {
-            const seen = new Map<string, string>()
-            for (const name of set) {
-                const key = name.toLowerCase()
-                if (!seen.has(key)) seen.set(key, name)
-            }
-            return { names: Array.from(seen.values()) }
-        })
-        .filter((group) => group.names.length >= 2)
+    const variantGroups = clusterSupplierTitles(allSlips.map((slip) => slip.title || '')).map(
+        (names) => ({ names })
+    )
 
     // Collect all canonical supplier names and month stats across the vault
     const allSupplierNames = Array.from(new Set(allSlips.map(getCanonicalSupplier))).sort(
@@ -448,12 +432,20 @@ export default async function SuppliersPage({ searchParams }: SuppliersPageProps
                     <Store size={22} className="text-brand-teal shrink-0" />
                     Suppliers
                 </h1>
-                <Link
-                    href="/dashboard/slips"
-                    className="btn btn-sm btn-outline border-gray-200 text-gray-700 hover:bg-brand-navy hover:text-white rounded-full normal-case min-h-11"
-                >
-                    All Slips
-                </Link>
+                <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                        href="/dashboard/suppliers/review"
+                        className="btn btn-sm btn-outline border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white rounded-full normal-case min-h-11"
+                    >
+                        Review names
+                    </Link>
+                    <Link
+                        href="/dashboard/slips"
+                        className="btn btn-sm btn-outline border-gray-200 text-gray-700 hover:bg-brand-navy hover:text-white rounded-full normal-case min-h-11"
+                    >
+                        All Slips
+                    </Link>
+                </div>
             </header>
 
             {/* Filter Bar */}
