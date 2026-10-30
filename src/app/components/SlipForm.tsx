@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { analyzeSlip, deleteSlip, checkForDuplicate } from '@/app/actions'
+import { analyzeSlip, deleteSlip, checkForDuplicate, getExistingSuppliers } from '@/app/actions'
 import { ANALYSIS_GAVE_UP_MESSAGE, CLIENT_ANALYSIS_TIMEOUT_MS, isTimeoutError, withTimeout } from '@/lib/analysisLimits'
 import { ALL_CATEGORIES, CATEGORY_GROUPS } from '@/lib/categories'
+import { findMatchingExistingSupplier } from '@/lib/suppliers'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { UploadCloud, X, MapPin, Hash, Camera } from 'lucide-react'
+import { UploadCloud, X, MapPin, Hash, Camera, Store, CheckCircle2 } from 'lucide-react'
 import DeleteConfirmationModal from './DeleteConfirmationModal'
 import ImageCropper from './ImageCropper'
 
@@ -62,8 +63,30 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
     const [infoMessage, setInfoMessage] = useState('')
     const [duplicateWarning, setDuplicateWarning] = useState<{ id: string, title: string, userName?: string } | null>(null)
     const [ignoreDuplicateChecked, setIgnoreDuplicateChecked] = useState(false)
+    const [existingSuppliers, setExistingSuppliers] = useState<string[]>([])
+    const [matchedSupplierInfo, setMatchedSupplierInfo] = useState<{
+        canonicalName: string
+        rawExtracted: string
+        extractedLocation?: string
+    } | null>(null)
 
     const categories = ALL_CATEGORIES
+
+    useEffect(() => {
+        getExistingSuppliers()
+            .then((list) => {
+                if (Array.isArray(list)) setExistingSuppliers(list)
+            })
+            .catch(() => {})
+    }, [])
+
+    const liveSupplierMatch =
+        title.trim() && existingSuppliers.length > 0
+            ? findMatchingExistingSupplier(title, existingSuppliers)
+            : null
+    const showLiveSupplierSuggestion =
+        liveSupplierMatch &&
+        liveSupplierMatch.canonicalName.toLowerCase() !== title.trim().toLowerCase()
 
     useEffect(() => {
         const check = async () => {
@@ -135,6 +158,7 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
         setError('')
         setInfoMessage('')
         setDuplicateWarning(null)
+        setMatchedSupplierInfo(null)
 
         const formData = new FormData()
         formData.append('photo', croppedFile)
@@ -158,6 +182,10 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                 setInfoMessage("The first AI was on holiday, so we tried its handsome cousin (Grok) to analyze your slip instead!")
             }
 
+            if (Array.isArray(result.existingSuppliers)) {
+                setExistingSuppliers(result.existingSuppliers)
+            }
+
             if (result.duplicate && result.duplicate.id !== initialData?.id) {
                 setDuplicateWarning({
                     id: result.duplicate.id,
@@ -170,8 +198,18 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
 
             if (hasData) {
                 if (result.data!.place) {
-                    setPlace(result.data!.place)
-                    if (!title) setTitle(result.data!.place)
+                    if (result.supplierMatch) {
+                        setTitle(result.supplierMatch.canonicalName)
+                        setPlace(result.supplierMatch.extractedLocation || result.data!.place)
+                        setMatchedSupplierInfo({
+                            canonicalName: result.supplierMatch.canonicalName,
+                            rawExtracted: result.data!.place,
+                            extractedLocation: result.supplierMatch.extractedLocation,
+                        })
+                    } else {
+                        setPlace(result.data!.place)
+                        if (!title) setTitle(result.data!.place)
+                    }
                 }
                 if (result.data!.date) setDate(result.data!.date)
                 if (result.data!.amountAfterTax) setAmount(result.data!.amountAfterTax.toString())
@@ -452,17 +490,100 @@ export default function SlipForm({ initialData, action, submitLabel, theme = 'li
                     {/* Title Input */}
                     <div className="form-control w-full">
                         <label className="label">
-                            <span className={`label-text font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Title / Merchant</span>
+                            <span className={`label-text font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Supplier / Merchant</span>
+                            {existingSuppliers.length > 0 && (
+                                <span className="label-text-alt text-xs text-gray-400">
+                                    {existingSuppliers.length} saved {existingSuppliers.length === 1 ? 'supplier' : 'suppliers'}
+                                </span>
+                            )}
                         </label>
                         <input
                             type="text"
                             name="title"
-                            placeholder="e.g. Woolworths Groceries"
+                            list="existing-suppliers-datalist"
+                            placeholder="e.g. Woolworths, Engen, Checkers"
                             className={inputClass}
                             value={title}
-                            onChange={(e) => setTitle(e.target.value)}
+                            onChange={(e) => {
+                                setTitle(e.target.value)
+                                if (matchedSupplierInfo && e.target.value !== matchedSupplierInfo.canonicalName) {
+                                    setMatchedSupplierInfo(null)
+                                }
+                            }}
                             required
                         />
+                        {existingSuppliers.length > 0 && (
+                            <datalist id="existing-suppliers-datalist">
+                                {existingSuppliers.map((sup) => (
+                                    <option key={sup} value={sup} />
+                                ))}
+                            </datalist>
+                        )}
+
+                        {matchedSupplierInfo && (
+                            <div className="mt-2 p-3 rounded-xl bg-teal-50 border border-brand-teal/30 text-teal-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <div className="flex items-start sm:items-center gap-2">
+                                    <CheckCircle2 size={16} className="text-brand-teal shrink-0 mt-0.5 sm:mt-0" />
+                                    <span>
+                                        {matchedSupplierInfo.rawExtracted.toLowerCase() !==
+                                        matchedSupplierInfo.canonicalName.toLowerCase() ? (
+                                            <>
+                                                <strong>Same Supplier Detected:</strong> Matched scanned merchant{' '}
+                                                <em>&ldquo;{matchedSupplierInfo.rawExtracted}&rdquo;</em> to your existing supplier{' '}
+                                                <strong>&ldquo;{matchedSupplierInfo.canonicalName}&rdquo;</strong> to avoid duplicate suppliers.
+                                            </>
+                                        ) : (
+                                            <>
+                                                <strong>Existing Supplier Matched:</strong> Linked to your saved supplier{' '}
+                                                <strong>&ldquo;{matchedSupplierInfo.canonicalName}&rdquo;</strong>.
+                                            </>
+                                        )}
+                                    </span>
+                                </div>
+                                {matchedSupplierInfo.rawExtracted.toLowerCase() !==
+                                    matchedSupplierInfo.canonicalName.toLowerCase() && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setTitle(matchedSupplierInfo.rawExtracted)
+                                            setPlace(matchedSupplierInfo.rawExtracted)
+                                            setMatchedSupplierInfo(null)
+                                        }}
+                                        className="btn btn-xs btn-ghost text-teal-800 hover:bg-teal-100 normal-case shrink-0 self-end sm:self-center"
+                                    >
+                                        Keep &ldquo;{matchedSupplierInfo.rawExtracted}&rdquo;
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
+                        {!matchedSupplierInfo && showLiveSupplierSuggestion && liveSupplierMatch && (
+                            <div className="mt-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-1.5">
+                                    <Store size={15} className="text-amber-600 shrink-0" />
+                                    <span>
+                                        Same supplier as existing <strong>&ldquo;{liveSupplierMatch.canonicalName}&rdquo;</strong>?
+                                    </span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (liveSupplierMatch.extractedLocation && !place) {
+                                            setPlace(liveSupplierMatch.extractedLocation)
+                                        }
+                                        setTitle(liveSupplierMatch.canonicalName)
+                                        setMatchedSupplierInfo({
+                                            canonicalName: liveSupplierMatch.canonicalName,
+                                            rawExtracted: title,
+                                            extractedLocation: liveSupplierMatch.extractedLocation,
+                                        })
+                                    }}
+                                    className="btn btn-xs bg-brand-teal hover:bg-brand-teal-hover text-white border-none rounded-lg normal-case shrink-0"
+                                >
+                                    Use &ldquo;{liveSupplierMatch.canonicalName}&rdquo;
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -10,9 +10,15 @@ interface SlipFiltersProps {
     companyUsers: { id: string; name: string | null; email: string }[]
     isCompanyView: boolean
     suppliers?: string[]
+    availableMonths?: { value: string; label: string; count: number }[]
 }
 
-export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [] }: SlipFiltersProps) {
+export default function SlipFilters({
+    companyUsers,
+    isCompanyView,
+    suppliers = [],
+    availableMonths = [],
+}: SlipFiltersProps) {
     const router = useRouter()
     const pathname = usePathname()
     const searchParams = useSearchParams()
@@ -21,7 +27,9 @@ export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [
     const [month, setMonth] = useState(searchParams.get('month') || '')
     const [supplier, setSupplier] = useState(searchParams.get('supplier') || 'all')
     const [supplierSearch, setSupplierSearch] = useState('')
-    const [category, setCategory] = useState(searchParams.get('category') || searchParams.get('tag') || 'all')
+    const [category, setCategory] = useState(
+        searchParams.get('category') || searchParams.get('tag') || 'all'
+    )
     const [contributor, setContributor] = useState(searchParams.get('contributor') || 'all')
     const [startDate, setStartDate] = useState(searchParams.get('start') || '')
     const [endDate, setEndDate] = useState(searchParams.get('end') || '')
@@ -48,24 +56,25 @@ export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [
     const isMobileFiltersOpen = searchParams.get('mobile_filters') === 'true'
 
     const toggleMobileFilters = (open: boolean) => {
-        const params = new URLSearchParams(window.location.search)
+        const params = new URLSearchParams(searchParams.toString())
         if (open) {
             params.set('mobile_filters', 'true')
         } else {
             params.delete('mobile_filters')
         }
-        router.replace(`${pathname}?${params.toString()}`)
+        const qs = params.toString()
+        router.push(qs ? `${pathname}?${qs}` : pathname)
     }
 
     const updateFilters = (key: string, value: string) => {
-        const params = new URLSearchParams(window.location.search)
+        const params = new URLSearchParams(searchParams.toString())
 
         if (key === 'category') {
             params.delete('tag')
         }
 
         if (key === 'month') {
-            if (!value) {
+            if (!value || value === 'all') {
                 params.delete('month')
                 params.delete('range')
                 params.delete('start')
@@ -79,7 +88,8 @@ export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [
             if (isMobileFiltersOpen) {
                 params.set('mobile_filters', 'true')
             }
-            router.replace(`${pathname}?${params.toString()}`)
+            const qs = params.toString()
+            router.push(qs ? `${pathname}?${qs}` : pathname)
             return
         }
 
@@ -100,24 +110,22 @@ export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [
                 params.delete('month')
                 setMonth('')
                 const now = new Date()
-                let start, end
 
                 if (value === 'this_month') {
-                    start = new Date(now.getFullYear(), now.getMonth(), 1)
-                    end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+                    const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+                    params.set('month', ym)
+                    params.delete('range')
+                    params.delete('start')
+                    params.delete('end')
                 } else if (value === 'last_month') {
-                    start = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-                    end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999)
-                }
-
-                if (start && end) {
-                    params.set('start', start.toISOString())
-                    params.set('end', end.toISOString())
+                    const last = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+                    const ym = `${last.getFullYear()}-${String(last.getMonth() + 1).padStart(2, '0')}`
+                    params.set('month', ym)
+                    params.delete('range')
+                    params.delete('start')
+                    params.delete('end')
                 } else if (value === 'custom') {
                     setDateRange('custom')
-                    return
-                } else if (value === 'month') {
-                    setDateRange('month')
                     return
                 }
             }
@@ -127,7 +135,8 @@ export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [
             params.set('mobile_filters', 'true')
         }
 
-        router.replace(`${pathname}?${params.toString()}`)
+        const qs = params.toString()
+        router.push(qs ? `${pathname}?${qs}` : pathname)
     }
 
     const handleCustomDateChange = (type: 'start' | 'end', value: string) => {
@@ -136,7 +145,7 @@ export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [
     }
 
     const applyCustomDate = () => {
-        const params = new URLSearchParams(window.location.search)
+        const params = new URLSearchParams(searchParams.toString())
         params.set('range', 'custom')
         params.delete('month')
 
@@ -144,11 +153,12 @@ export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [
         if (endDate) params.set('end', new Date(`${endDate}T23:59:59.999Z`).toISOString())
 
         params.delete('mobile_filters')
-        router.replace(`${pathname}?${params.toString()}`)
+        const qs = params.toString()
+        router.push(qs ? `${pathname}?${qs}` : pathname)
     }
 
     const clearAllFilters = () => {
-        const params = new URLSearchParams(window.location.search)
+        const params = new URLSearchParams(searchParams.toString())
         params.delete('range')
         params.delete('start')
         params.delete('end')
@@ -167,13 +177,18 @@ export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [
             params.set('mobile_filters', 'true')
         }
 
-        router.replace(`${pathname}?${params.toString()}`)
+        const qs = params.toString()
+        router.push(qs ? `${pathname}?${qs}` : pathname)
     }
 
     const formatMonthLabel = (yyyyMm: string) => {
         const [y, m] = yyyyMm.split('-').map(Number)
         if (!y || !m) return yyyyMm
-        return new Date(y, m - 1, 1).toLocaleDateString('en-ZA', { month: 'short', year: 'numeric' })
+        return new Date(Date.UTC(y, m - 1, 15)).toLocaleDateString('en-ZA', {
+            month: 'short',
+            year: 'numeric',
+            timeZone: 'UTC',
+        })
     }
 
     const formatCategoryLabel = (cat: string) => {
@@ -197,47 +212,53 @@ export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [
     const dateButtonLabel = month
         ? `Month: ${formatMonthLabel(month)}`
         : dateRange === 'all'
-        ? 'Date: All Time'
+        ? 'Month / Date: All'
         : dateRange === 'this_month'
         ? 'Date: This Month'
         : dateRange === 'last_month'
         ? 'Date: Last Month'
         : dateRange === 'custom'
         ? 'Date: Custom'
-        : 'Date'
+        : 'Month / Date'
 
     return (
         <div className="mb-6 relative">
             {/* Mobile Toggle Button */}
             <button
+                type="button"
                 className="md:hidden btn btn-sm btn-outline rounded-full w-full mb-2 flex items-center justify-center gap-2"
                 onClick={() => toggleMobileFilters(true)}
             >
                 <Filter size={16} />
-                Search & Filter Slips
+                Search &amp; Filter Slips
                 {hasActiveFilters && <span className="badge badge-xs badge-primary"></span>}
             </button>
 
             {/* Filter Container */}
-            <div className={`
+            <div
+                className={`
                 ${isMobileFiltersOpen ? 'fixed inset-0 z-[60] bg-white flex flex-col' : 'hidden'}
                 md:flex md:static md:bg-transparent md:p-0 md:flex-row md:items-center md:overflow-visible
                 gap-2 flex-wrap
-            `}>
+            `}
+            >
                 {/* Mobile Header (Close Button) */}
                 <div className="flex md:hidden w-full justify-between items-center p-4 border-b border-gray-100 bg-white shrink-0">
                     <h3 className="font-bold text-lg text-brand-navy flex items-center gap-2">
                         <Filter size={20} />
-                        Search & Filters
+                        Search &amp; Filters
                     </h3>
-                    <button onClick={() => toggleMobileFilters(false)} className="btn btn-ghost btn-circle btn-sm">
+                    <button
+                        type="button"
+                        onClick={() => toggleMobileFilters(false)}
+                        className="btn btn-ghost btn-circle btn-sm"
+                    >
                         <X size={24} />
                     </button>
                 </div>
 
                 {/* Scrollable Content Area for Mobile */}
                 <div className="flex-1 overflow-y-auto p-4 md:p-0 md:overflow-visible w-full md:w-auto flex flex-col md:flex-row md:flex-wrap md:items-center gap-2">
-
                     {/* Search Input */}
                     <div className="w-full md:w-60 mb-2 md:mb-0">
                         <SearchInput />
@@ -249,14 +270,20 @@ export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [
                     </div>
 
                     {/* Supplier Filter */}
-                    <div className={`w-full md:w-auto mb-2 md:mb-0 ${isMobileFiltersOpen ? '' : 'dropdown'}`}>
+                    <div
+                        className={`w-full md:w-auto mb-2 md:mb-0 ${
+                            isMobileFiltersOpen ? '' : 'dropdown'
+                        }`}
+                    >
                         {isMobileFiltersOpen ? (
                             <div className="collapse collapse-arrow border border-gray-200 rounded-box">
                                 <input type="checkbox" />
                                 <div className="collapse-title font-medium flex items-center gap-2">
                                     <Store size={14} />
                                     <span className="truncate">
-                                        {supplier === 'all' ? 'Supplier: All' : `Supplier: ${supplier}`}
+                                        {supplier === 'all'
+                                            ? 'Supplier: All'
+                                            : `Supplier: ${supplier}`}
                                     </span>
                                 </div>
                                 <div className="collapse-content">
@@ -271,7 +298,11 @@ export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [
                                     )}
                                     <ul className="menu p-0 max-h-52 overflow-y-auto flex-nowrap">
                                         <li>
-                                            <button type="button" onClick={() => updateFilters('supplier', 'all')} className={supplier === 'all' ? 'active' : ''}>
+                                            <button
+                                                type="button"
+                                                onClick={() => updateFilters('supplier', 'all')}
+                                                className={supplier === 'all' ? 'active' : ''}
+                                            >
                                                 All Suppliers
                                             </button>
                                         </li>
@@ -280,7 +311,11 @@ export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [
                                                 <button
                                                     type="button"
                                                     onClick={() => updateFilters('supplier', sup)}
-                                                    className={supplier.toLowerCase() === sup.toLowerCase() ? 'active' : ''}
+                                                    className={
+                                                        supplier.toLowerCase() === sup.toLowerCase()
+                                                            ? 'active'
+                                                            : ''
+                                                    }
                                                 >
                                                     {sup}
                                                 </button>
@@ -294,14 +329,23 @@ export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [
                                 <button
                                     type="button"
                                     tabIndex={0}
-                                    className={`btn btn-sm btn-outline rounded-full font-normal normal-case w-full md:w-auto justify-start md:justify-center max-w-xs ${supplier !== 'all' ? 'btn-active bg-brand-teal text-white border-brand-teal' : ''}`}
+                                    className={`btn btn-sm btn-outline rounded-full font-normal normal-case w-full md:w-auto justify-start md:justify-center max-w-xs ${
+                                        supplier !== 'all'
+                                            ? 'btn-active bg-brand-teal text-white border-brand-teal'
+                                            : ''
+                                    }`}
                                 >
                                     <Store size={14} className="shrink-0" />
                                     <span className="truncate">
-                                        {supplier === 'all' ? 'Supplier: All' : `Supplier: ${supplier}`}
+                                        {supplier === 'all'
+                                            ? 'Supplier: All'
+                                            : `Supplier: ${supplier}`}
                                     </span>
                                 </button>
-                                <div tabIndex={0} className="dropdown-content z-[70] p-2 shadow bg-white text-gray-900 rounded-box w-full md:w-64 mt-1">
+                                <div
+                                    tabIndex={0}
+                                    className="dropdown-content z-[70] p-2 shadow bg-white text-gray-900 rounded-box w-full md:w-64 mt-1"
+                                >
                                     {suppliers.length > 5 && (
                                         <input
                                             type="text"
@@ -316,7 +360,11 @@ export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [
                                             <button
                                                 type="button"
                                                 onClick={() => updateFilters('supplier', 'all')}
-                                                className={`hover:bg-gray-100 ${supplier === 'all' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}
+                                                className={`hover:bg-gray-100 ${
+                                                    supplier === 'all'
+                                                        ? 'active bg-brand-teal text-white hover:bg-brand-teal'
+                                                        : ''
+                                                }`}
                                             >
                                                 All Suppliers
                                             </button>
@@ -326,7 +374,11 @@ export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [
                                                 <button
                                                     type="button"
                                                     onClick={() => updateFilters('supplier', sup)}
-                                                    className={`hover:bg-gray-100 ${supplier.toLowerCase() === sup.toLowerCase() ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}
+                                                    className={`hover:bg-gray-100 ${
+                                                        supplier.toLowerCase() === sup.toLowerCase()
+                                                            ? 'active bg-brand-teal text-white hover:bg-brand-teal'
+                                                            : ''
+                                                    }`}
                                                 >
                                                     <span className="truncate">{sup}</span>
                                                 </button>
@@ -339,7 +391,11 @@ export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [
                     </div>
 
                     {/* Date & Month Filter */}
-                    <div className={`w-full md:w-auto mb-2 md:mb-0 ${isMobileFiltersOpen ? '' : 'dropdown'}`}>
+                    <div
+                        className={`w-full md:w-auto mb-2 md:mb-0 ${
+                            isMobileFiltersOpen ? '' : 'dropdown'
+                        }`}
+                    >
                         {isMobileFiltersOpen ? (
                             <div className="collapse collapse-arrow border border-gray-200 rounded-box">
                                 <input type="checkbox" />
@@ -349,92 +405,205 @@ export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [
                                 </div>
                                 <div className="collapse-content">
                                     <ul className="menu p-0">
-                                        <li><button type="button" onClick={() => updateFilters('range', 'all')} className={dateRange === 'all' && !month ? 'active' : ''}>All Time</button></li>
-                                        <li><button type="button" onClick={() => updateFilters('range', 'this_month')} className={dateRange === 'this_month' ? 'active' : ''}>This Month</button></li>
-                                        <li><button type="button" onClick={() => updateFilters('range', 'last_month')} className={dateRange === 'last_month' ? 'active' : ''}>Last Month</button></li>
-                                        <li><button type="button" onClick={() => updateFilters('range', 'custom')} className={dateRange === 'custom' ? 'active' : ''}>Custom Range</button></li>
+                                        <li>
+                                            <button
+                                                type="button"
+                                                onClick={() => updateFilters('range', 'all')}
+                                                className={dateRange === 'all' && !month ? 'active' : ''}
+                                            >
+                                                All Time
+                                            </button>
+                                        </li>
+                                        {availableMonths.map((m) => (
+                                            <li key={m.value}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateFilters('month', m.value)}
+                                                    className={month === m.value ? 'active' : ''}
+                                                >
+                                                    {m.label} ({m.count})
+                                                </button>
+                                            </li>
+                                        ))}
+                                        <li>
+                                            <button
+                                                type="button"
+                                                onClick={() => updateFilters('range', 'custom')}
+                                                className={dateRange === 'custom' ? 'active' : ''}
+                                            >
+                                                Custom Date Range
+                                            </button>
+                                        </li>
                                     </ul>
-                                    <div className="pt-2 border-t border-gray-100 mt-2">
-                                        <label className="text-xs text-gray-500 block mb-1">Specific Month</label>
-                                        <input
-                                            type="month"
-                                            className="input input-xs input-bordered w-full bg-white text-gray-900"
-                                            value={month}
-                                            onChange={(e) => updateFilters('month', e.target.value)}
-                                        />
-                                    </div>
                                     {dateRange === 'custom' && (
                                         <div className="pt-2 border-t border-gray-100 mt-2">
                                             <div className="grid grid-cols-2 gap-2 mb-2">
                                                 <div>
-                                                    <label className="text-xs text-gray-500 block mb-1">Start</label>
+                                                    <label className="text-xs text-gray-500 block mb-1">
+                                                        Start
+                                                    </label>
                                                     <input
                                                         type="date"
                                                         className="input input-xs input-bordered w-full bg-white text-gray-900"
-                                                        value={startDate ? new Date(startDate).toISOString().split('T')[0] : ''}
-                                                        onChange={(e) => handleCustomDateChange('start', e.target.value)}
+                                                        value={
+                                                            startDate
+                                                                ? new Date(startDate)
+                                                                      .toISOString()
+                                                                      .split('T')[0]
+                                                                : ''
+                                                        }
+                                                        onChange={(e) =>
+                                                            handleCustomDateChange('start', e.target.value)
+                                                        }
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="text-xs text-gray-500 block mb-1">End</label>
+                                                    <label className="text-xs text-gray-500 block mb-1">
+                                                        End
+                                                    </label>
                                                     <input
                                                         type="date"
                                                         className="input input-xs input-bordered w-full bg-white text-gray-900"
-                                                        value={endDate ? new Date(endDate).toISOString().split('T')[0] : ''}
-                                                        onChange={(e) => handleCustomDateChange('end', e.target.value)}
+                                                        value={
+                                                            endDate
+                                                                ? new Date(endDate)
+                                                                      .toISOString()
+                                                                      .split('T')[0]
+                                                                : ''
+                                                        }
+                                                        onChange={(e) =>
+                                                            handleCustomDateChange('end', e.target.value)
+                                                        }
                                                     />
                                                 </div>
                                             </div>
-                                            <button type="button" onClick={applyCustomDate} className="btn btn-xs btn-primary w-full text-white">Apply Range</button>
+                                            <button
+                                                type="button"
+                                                onClick={applyCustomDate}
+                                                className="btn btn-xs btn-primary w-full text-white"
+                                            >
+                                                Apply Range
+                                            </button>
                                         </div>
                                     )}
                                 </div>
                             </div>
                         ) : (
                             <>
-                                <button type="button" tabIndex={0} className={`btn btn-sm btn-outline rounded-full font-normal normal-case w-full md:w-auto justify-start md:justify-center ${dateRange !== 'all' || month ? 'btn-active bg-brand-teal text-white border-brand-teal' : ''}`}>
+                                <button
+                                    type="button"
+                                    tabIndex={0}
+                                    className={`btn btn-sm btn-outline rounded-full font-normal normal-case w-full md:w-auto justify-start md:justify-center ${
+                                        dateRange !== 'all' || month
+                                            ? 'btn-active bg-brand-teal text-white border-brand-teal'
+                                            : ''
+                                    }`}
+                                >
                                     <Calendar size={14} />
                                     {dateButtonLabel}
                                 </button>
-                                <div tabIndex={0} className="dropdown-content z-[70] menu p-2 shadow bg-white text-gray-900 rounded-box w-full md:w-72 mt-1">
+                                <div
+                                    tabIndex={0}
+                                    className="dropdown-content z-[70] menu p-2 shadow bg-white text-gray-900 rounded-box w-full md:w-72 mt-1 max-h-80 overflow-y-auto block"
+                                >
                                     <ul className="menu p-0">
-                                        <li><button type="button" onClick={() => updateFilters('range', 'all')} className={`hover:bg-gray-100 ${dateRange === 'all' && !month ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>All Time</button></li>
-                                        <li><button type="button" onClick={() => updateFilters('range', 'this_month')} className={`hover:bg-gray-100 ${dateRange === 'this_month' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>This Month</button></li>
-                                        <li><button type="button" onClick={() => updateFilters('range', 'last_month')} className={`hover:bg-gray-100 ${dateRange === 'last_month' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>Last Month</button></li>
-                                        <li><button type="button" onClick={() => updateFilters('range', 'custom')} className={`hover:bg-gray-100 ${dateRange === 'custom' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>Custom Range</button></li>
+                                        <li>
+                                            <button
+                                                type="button"
+                                                onClick={() => updateFilters('range', 'all')}
+                                                className={`hover:bg-gray-100 ${
+                                                    dateRange === 'all' && !month
+                                                        ? 'active bg-brand-teal text-white hover:bg-brand-teal'
+                                                        : ''
+                                                }`}
+                                            >
+                                                All Time
+                                            </button>
+                                        </li>
+                                        {availableMonths.length > 0 && (
+                                            <li className="menu-title text-xs uppercase text-gray-400 pt-2 pb-1 px-2">
+                                                Months with Slips
+                                            </li>
+                                        )}
+                                        {availableMonths.map((m) => (
+                                            <li key={m.value}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateFilters('month', m.value)}
+                                                    className={`hover:bg-gray-100 flex justify-between ${
+                                                        month === m.value
+                                                            ? 'active bg-brand-teal text-white hover:bg-brand-teal'
+                                                            : ''
+                                                    }`}
+                                                >
+                                                    <span>{m.label}</span>
+                                                    <span className="badge badge-xs">{m.count}</span>
+                                                </button>
+                                            </li>
+                                        ))}
+                                        <li className="border-t border-gray-100 mt-1 pt-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => updateFilters('range', 'custom')}
+                                                className={`hover:bg-gray-100 ${
+                                                    dateRange === 'custom'
+                                                        ? 'active bg-brand-teal text-white hover:bg-brand-teal'
+                                                        : ''
+                                                }`}
+                                            >
+                                                Custom Date Range
+                                            </button>
+                                        </li>
                                     </ul>
-                                    <div className="p-2 border-t border-gray-100 mt-2">
-                                        <label className="text-xs font-medium text-gray-500 block mb-1">Filter by Month</label>
-                                        <input
-                                            type="month"
-                                            className="input input-xs input-bordered w-full bg-white text-gray-900"
-                                            value={month}
-                                            onChange={(e) => updateFilters('month', e.target.value)}
-                                        />
-                                    </div>
                                     {dateRange === 'custom' && (
                                         <div className="p-2 border-t border-gray-100 mt-1">
                                             <div className="grid grid-cols-2 gap-2 mb-2">
                                                 <div>
-                                                    <label className="text-xs text-gray-500 block mb-1">Start</label>
+                                                    <label className="text-xs text-gray-500 block mb-1">
+                                                        Start
+                                                    </label>
                                                     <input
                                                         type="date"
                                                         className="input input-xs input-bordered w-full bg-white text-gray-900"
-                                                        value={startDate ? new Date(startDate).toISOString().split('T')[0] : ''}
-                                                        onChange={(e) => handleCustomDateChange('start', e.target.value)}
+                                                        value={
+                                                            startDate
+                                                                ? new Date(startDate)
+                                                                      .toISOString()
+                                                                      .split('T')[0]
+                                                                : ''
+                                                        }
+                                                        onChange={(e) =>
+                                                            handleCustomDateChange('start', e.target.value)
+                                                        }
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="text-xs text-gray-500 block mb-1">End</label>
+                                                    <label className="text-xs text-gray-500 block mb-1">
+                                                        End
+                                                    </label>
                                                     <input
                                                         type="date"
                                                         className="input input-xs input-bordered w-full bg-white text-gray-900"
-                                                        value={endDate ? new Date(endDate).toISOString().split('T')[0] : ''}
-                                                        onChange={(e) => handleCustomDateChange('end', e.target.value)}
+                                                        value={
+                                                            endDate
+                                                                ? new Date(endDate)
+                                                                      .toISOString()
+                                                                      .split('T')[0]
+                                                                : ''
+                                                        }
+                                                        onChange={(e) =>
+                                                            handleCustomDateChange('end', e.target.value)
+                                                        }
                                                     />
                                                 </div>
                                             </div>
-                                            <button type="button" onClick={applyCustomDate} className="btn btn-xs btn-primary w-full text-white">Apply Range</button>
+                                            <button
+                                                type="button"
+                                                onClick={applyCustomDate}
+                                                className="btn btn-xs btn-primary w-full text-white"
+                                            >
+                                                Apply Range
+                                            </button>
                                         </div>
                                     )}
                                 </div>
@@ -443,7 +612,11 @@ export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [
                     </div>
 
                     {/* Category / Subcategory Filter */}
-                    <div className={`w-full md:w-auto mb-2 md:mb-0 ${isMobileFiltersOpen ? '' : 'dropdown'}`}>
+                    <div
+                        className={`w-full md:w-auto mb-2 md:mb-0 ${
+                            isMobileFiltersOpen ? '' : 'dropdown'
+                        }`}
+                    >
                         {isMobileFiltersOpen ? (
                             <div className="collapse collapse-arrow border border-gray-200 rounded-box">
                                 <input type="checkbox" />
@@ -453,13 +626,27 @@ export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [
                                 </div>
                                 <div className="collapse-content">
                                     <ul className="menu p-0 max-h-64 overflow-y-auto flex-nowrap">
-                                        <li><button type="button" onClick={() => updateFilters('category', 'all')} className={category === 'all' ? 'active' : ''}>All Categories</button></li>
+                                        <li>
+                                            <button
+                                                type="button"
+                                                onClick={() => updateFilters('category', 'all')}
+                                                className={category === 'all' ? 'active' : ''}
+                                            >
+                                                All Categories
+                                            </button>
+                                        </li>
                                         {CATEGORY_GROUPS.map((group) => (
                                             <li key={group.group} className="mt-1">
                                                 <button
                                                     type="button"
-                                                    onClick={() => updateFilters('category', `group:${group.group}`)}
-                                                    className={`font-semibold text-xs uppercase tracking-wider text-brand-navy ${category === `group:${group.group}` ? 'active' : ''}`}
+                                                    onClick={() =>
+                                                        updateFilters('category', `group:${group.group}`)
+                                                    }
+                                                    className={`font-semibold text-xs uppercase tracking-wider text-brand-navy ${
+                                                        category === `group:${group.group}`
+                                                            ? 'active'
+                                                            : ''
+                                                    }`}
                                                 >
                                                     All {group.group}
                                                 </button>
@@ -468,8 +655,12 @@ export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [
                                                         <li key={cat}>
                                                             <button
                                                                 type="button"
-                                                                onClick={() => updateFilters('category', cat)}
-                                                                className={category === cat ? 'active' : ''}
+                                                                onClick={() =>
+                                                                    updateFilters('category', cat)
+                                                                }
+                                                                className={
+                                                                    category === cat ? 'active' : ''
+                                                                }
                                                             >
                                                                 {cat}
                                                             </button>
@@ -483,19 +674,51 @@ export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [
                             </div>
                         ) : (
                             <>
-                                <button type="button" tabIndex={0} className={`btn btn-sm btn-outline rounded-full font-normal normal-case w-full md:w-auto justify-start md:justify-center max-w-xs ${category !== 'all' ? 'btn-active bg-brand-teal text-white border-brand-teal' : ''}`}>
+                                <button
+                                    type="button"
+                                    tabIndex={0}
+                                    className={`btn btn-sm btn-outline rounded-full font-normal normal-case w-full md:w-auto justify-start md:justify-center max-w-xs ${
+                                        category !== 'all'
+                                            ? 'btn-active bg-brand-teal text-white border-brand-teal'
+                                            : ''
+                                    }`}
+                                >
                                     <Tag size={14} className="shrink-0" />
                                     <span className="truncate">{formatCategoryLabel(category)}</span>
                                 </button>
-                                <ul tabIndex={0} className="dropdown-content z-[70] menu p-2 shadow bg-white text-gray-900 rounded-box w-full md:w-64 mt-1 max-h-80 overflow-y-auto block">
-                                    <li><button type="button" onClick={() => updateFilters('category', 'all')} className={`hover:bg-gray-100 ${category === 'all' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>All Categories</button></li>
+                                <ul
+                                    tabIndex={0}
+                                    className="dropdown-content z-[70] menu p-2 shadow bg-white text-gray-900 rounded-box w-full md:w-64 mt-1 max-h-80 overflow-y-auto block"
+                                >
+                                    <li>
+                                        <button
+                                            type="button"
+                                            onClick={() => updateFilters('category', 'all')}
+                                            className={`hover:bg-gray-100 ${
+                                                category === 'all'
+                                                    ? 'active bg-brand-teal text-white hover:bg-brand-teal'
+                                                    : ''
+                                            }`}
+                                        >
+                                            All Categories
+                                        </button>
+                                    </li>
                                     {CATEGORY_GROUPS.map((group) => (
-                                        <div key={group.group} className="mt-2 border-t border-gray-100 pt-1">
+                                        <div
+                                            key={group.group}
+                                            className="mt-2 border-t border-gray-100 pt-1"
+                                        >
                                             <li>
                                                 <button
                                                     type="button"
-                                                    onClick={() => updateFilters('category', `group:${group.group}`)}
-                                                    className={`text-xs font-bold uppercase tracking-wider text-brand-navy hover:bg-gray-100 ${category === `group:${group.group}` ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}
+                                                    onClick={() =>
+                                                        updateFilters('category', `group:${group.group}`)
+                                                    }
+                                                    className={`text-xs font-bold uppercase tracking-wider text-brand-navy hover:bg-gray-100 ${
+                                                        category === `group:${group.group}`
+                                                            ? 'active bg-brand-teal text-white hover:bg-brand-teal'
+                                                            : ''
+                                                    }`}
                                                 >
                                                     {group.group} (All)
                                                 </button>
@@ -505,7 +728,11 @@ export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [
                                                     <button
                                                         type="button"
                                                         onClick={() => updateFilters('category', cat)}
-                                                        className={`pl-5 hover:bg-gray-100 ${category === cat ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}
+                                                        className={`pl-5 hover:bg-gray-100 ${
+                                                            category === cat
+                                                                ? 'active bg-brand-teal text-white hover:bg-brand-teal'
+                                                                : ''
+                                                        }`}
                                                     >
                                                         {cat}
                                                     </button>
@@ -520,21 +747,48 @@ export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [
 
                     {/* Contributor Filter (Company View Only) */}
                     {isCompanyView && (
-                        <div className={`w-full md:w-auto mb-2 md:mb-0 ${isMobileFiltersOpen ? '' : 'dropdown'}`}>
+                        <div
+                            className={`w-full md:w-auto mb-2 md:mb-0 ${
+                                isMobileFiltersOpen ? '' : 'dropdown'
+                            }`}
+                        >
                             {isMobileFiltersOpen ? (
                                 <div className="collapse collapse-arrow border border-gray-200 rounded-box">
                                     <input type="checkbox" />
                                     <div className="collapse-title font-medium flex items-center gap-2">
                                         <User size={14} />
-                                        {contributor === 'all' ? 'Contributor: All' :
-                                            `Contributor: ${companyUsers.find(u => u.id === contributor)?.name?.split(' ')[0] || 'Unknown'}`}
+                                        {contributor === 'all'
+                                            ? 'Contributor: All'
+                                            : `Contributor: ${
+                                                  companyUsers
+                                                      .find((u) => u.id === contributor)
+                                                      ?.name?.split(' ')[0] || 'Unknown'
+                                              }`}
                                     </div>
                                     <div className="collapse-content">
                                         <ul className="menu p-0">
-                                            <li><button type="button" onClick={() => updateFilters('contributor', 'all')} className={contributor === 'all' ? 'active' : ''}>All Contributors</button></li>
-                                            {companyUsers.map(user => (
+                                            <li>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        updateFilters('contributor', 'all')
+                                                    }
+                                                    className={contributor === 'all' ? 'active' : ''}
+                                                >
+                                                    All Contributors
+                                                </button>
+                                            </li>
+                                            {companyUsers.map((user) => (
                                                 <li key={user.id}>
-                                                    <button type="button" onClick={() => updateFilters('contributor', user.id)} className={contributor === user.id ? 'active' : ''}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            updateFilters('contributor', user.id)
+                                                        }
+                                                        className={
+                                                            contributor === user.id ? 'active' : ''
+                                                        }
+                                                    >
                                                         {user.name || user.email}
                                                     </button>
                                                 </li>
@@ -544,16 +798,54 @@ export default function SlipFilters({ companyUsers, isCompanyView, suppliers = [
                                 </div>
                             ) : (
                                 <>
-                                    <button type="button" tabIndex={0} className={`btn btn-sm btn-outline rounded-full font-normal normal-case w-full md:w-auto justify-start md:justify-center ${contributor !== 'all' ? 'btn-active bg-brand-teal text-white border-brand-teal' : ''}`}>
+                                    <button
+                                        type="button"
+                                        tabIndex={0}
+                                        className={`btn btn-sm btn-outline rounded-full font-normal normal-case w-full md:w-auto justify-start md:justify-center ${
+                                            contributor !== 'all'
+                                                ? 'btn-active bg-brand-teal text-white border-brand-teal'
+                                                : ''
+                                        }`}
+                                    >
                                         <User size={14} />
-                                        {contributor === 'all' ? 'Contributor: All' :
-                                            `Contributor: ${companyUsers.find(u => u.id === contributor)?.name?.split(' ')[0] || 'Unknown'}`}
+                                        {contributor === 'all'
+                                            ? 'Contributor: All'
+                                            : `Contributor: ${
+                                                  companyUsers
+                                                      .find((u) => u.id === contributor)
+                                                      ?.name?.split(' ')[0] || 'Unknown'
+                                              }`}
                                     </button>
-                                    <ul tabIndex={0} className="dropdown-content z-[70] menu p-2 shadow bg-white text-gray-900 rounded-box w-full md:w-52 mt-1 max-h-60 overflow-y-auto block">
-                                        <li><button type="button" onClick={() => updateFilters('contributor', 'all')} className={`hover:bg-gray-100 ${contributor === 'all' ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>All Contributors</button></li>
-                                        {companyUsers.map(user => (
+                                    <ul
+                                        tabIndex={0}
+                                        className="dropdown-content z-[70] menu p-2 shadow bg-white text-gray-900 rounded-box w-full md:w-52 mt-1 max-h-60 overflow-y-auto block"
+                                    >
+                                        <li>
+                                            <button
+                                                type="button"
+                                                onClick={() => updateFilters('contributor', 'all')}
+                                                className={`hover:bg-gray-100 ${
+                                                    contributor === 'all'
+                                                        ? 'active bg-brand-teal text-white hover:bg-brand-teal'
+                                                        : ''
+                                                }`}
+                                            >
+                                                All Contributors
+                                            </button>
+                                        </li>
+                                        {companyUsers.map((user) => (
                                             <li key={user.id}>
-                                                <button type="button" onClick={() => updateFilters('contributor', user.id)} className={`hover:bg-gray-100 ${contributor === user.id ? 'active bg-brand-teal text-white hover:bg-brand-teal' : ''}`}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        updateFilters('contributor', user.id)
+                                                    }
+                                                    className={`hover:bg-gray-100 ${
+                                                        contributor === user.id
+                                                            ? 'active bg-brand-teal text-white hover:bg-brand-teal'
+                                                            : ''
+                                                    }`}
+                                                >
                                                     {user.name || user.email}
                                                 </button>
                                             </li>

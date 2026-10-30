@@ -16,6 +16,11 @@ import {
     PHOTO_SAVE_TIMEOUT_MS,
     withTimeout,
 } from "@/lib/analysisLimits"
+import {
+    buildCanonicalSupplierMap,
+    findMatchingExistingSupplier,
+    getRawSlipSupplier,
+} from "@/lib/suppliers"
 
 function errorMessage(error: unknown): string {
     if (typeof error === "object" && error && "message" in error) {
@@ -84,11 +89,23 @@ export async function analyzeSlip(formData: FormData) {
         }
 
         let duplicate = null;
+        let supplierMatch = null;
+        let existingSuppliers: string[] = [];
         const extracted = outcome.result.data;
+
+        try {
+            existingSuppliers = await getExistingSuppliers();
+            if (extracted?.place) {
+                supplierMatch = findMatchingExistingSupplier(extracted.place, existingSuppliers);
+            }
+        } catch (supErr) {
+            console.error("Supplier match check failed:", supErr);
+        }
+
         if (extracted?.date && typeof extracted?.amountAfterTax === 'number' && extracted.amountAfterTax > 0) {
             try {
                 duplicate = await checkForDuplicate({
-                    title: extracted.place || '',
+                    title: supplierMatch?.canonicalName || extracted.place || '',
                     place: extracted.place || '',
                     date: extracted.date,
                     amount: extracted.amountAfterTax,
@@ -104,6 +121,8 @@ export async function analyzeSlip(formData: FormData) {
             data: outcome.result.data,
             usedGrok: outcome.result.usedGrok,
             duplicate,
+            supplierMatch,
+            existingSuppliers,
         }
     } catch (error: unknown) {
         return { success: false, error: errorMessage(error) };
@@ -809,4 +828,106 @@ export async function deleteNotification(id: string) {
     } catch (error) {
         return { success: false }
     }
+}
+
+export async function getExistingSuppliers(): Promise<string[]> {
+    const session = await getServerSession(authOptions)
+    if (!session) return []
+
+    const isCompanyView =
+        (session.user.role === 'COMPANY_ADMIN' ||
+            session.user.role === 'ACCOUNTANT' ||
+            session.user.role === 'ADMIN' ||
+            session.user.role === 'CONTRIBUTOR') &&
+        session.user.companyId
+
+    const whereClause = isCompanyView
+        ? { user: { companyId: session.user.companyId } }
+        : { userId: session.user.id }
+
+    try {
+        const rows = await prisma.slip.findMany({
+            where: whereClause,
+            select: { title: true, place: true },
+        })
+
+        const rawNames = rows
+            .map((r) => getRawSlipSupplier(r))
+            .filter((name) => name && name !== 'Unspecified Supplier' && !name.startsWith('TEST_'))
+
+        const canonicalMap = buildCanonicalSupplierMap(rawNames)
+        const uniqueCanonicals = Array.from(new Set(canonicalMap.values())).sort((a, b) =>
+            a.localeCompare(b)
+        )
+        return uniqueCanonicals
+    } catch (error) {
+        console.error("Failed to fetch existing suppliers:", error)
+        return []
+    }
+}
+
+export async function standardizeSupplierName(variantNames: string[], canonicalName: string) {
+    const session = await getServerSession(authOptions)
+    if (!session) throw new Error("Unauthorized")
+    if (session.user.role === 'ACCOUNTANT') {
+        throw new Error("Unauthorized: Accountants cannot modify slips")
+    }
+
+    const cleanCanonical = canonicalName.trim()
+    if (!cleanCanonical || variantNames.length === 0) {
+        return { success: false, updatedCount: 0 }
+    }
+
+    const isCompanyView =
+        (session.user.role === 'COMPANY_ADMIN' || session.user.role === 'ADMIN') &&
+        session.user.companyId
+
+    const scopeWhere: any = isCompanyView
+        ? { user: { companyId: session.user.companyId } }
+        : { userId: session.user.id }
+
+    const slipsToUpdate = await prisma.slip.findMany({
+        where: {
+            ...scopeWhere,
+            OR: variantNames.map((v) => ({
+                title: { equals: v, mode: 'insensitive' as const },
+            })),
+        },
+        select: { id: true, title: true, place: true },
+    })
+
+    let updatedCount = 0
+    for (const slip of slipsToUpdate) {
+        if (slip.title === cleanCanonical) continue
+
+        let updatedPlace = slip.place
+        const lowerTitle = slip.title.toLowerCase()
+        const lowerCanon = cleanCanonical.toLowerCase()
+        if (lowerTitle.startsWith(lowerCanon) && slip.title.length > cleanCanonical.length) {
+            const branchSuffix = slip.title
+                .slice(cleanCanonical.length)
+                .replace(/^[\s\-,:/]+/, '')
+                .trim()
+            if (
+                branchSuffix &&
+                (!updatedPlace || updatedPlace.toLowerCase() === lowerTitle)
+            ) {
+                updatedPlace = branchSuffix
+            }
+        }
+
+        await prisma.slip.update({
+            where: { id: slip.id },
+            data: {
+                title: cleanCanonical,
+                place: updatedPlace,
+            },
+        })
+        updatedCount++
+    }
+
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/suppliers')
+    revalidatePath('/dashboard/slips')
+    return { success: true, updatedCount }
 }

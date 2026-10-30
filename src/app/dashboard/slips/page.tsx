@@ -4,7 +4,14 @@ import { prisma } from "@/lib/prisma"
 import SlipList from "@/app/components/SlipList"
 import SlipFilters from "@/app/components/SlipFilters"
 import { resolveCategoryFilter } from "@/lib/categories"
-import { ChevronLeft, Plus, Store, Calendar } from "lucide-react"
+import {
+    buildCanonicalSupplierMap,
+    formatMonthKey,
+    getRawSlipSupplier,
+    getSlipMonthKey,
+    isSameSupplier,
+} from "@/lib/suppliers"
+import { ChevronLeft, Plus, Store } from "lucide-react"
 import Link from "next/link"
 
 interface AllSlipsPageProps {
@@ -28,107 +35,114 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
     }
 
     const { q, start, end, month, supplier, category, tag, contributor } = await searchParams
-    const query = q || ''
+    const query = (q || '').trim().toLowerCase()
     const activeCategory = category || tag || ''
+    const activeSupplier = supplier && supplier !== 'all' ? supplier : ''
+    const activeMonth = month && month !== 'all' ? month : ''
 
-    const isCompanyView = (session.user.role === 'COMPANY_ADMIN' || session.user.role === 'ACCOUNTANT' || session.user.role === 'ADMIN') && session.user.companyId
+    const isCompanyView =
+        (session.user.role === 'COMPANY_ADMIN' ||
+            session.user.role === 'ACCOUNTANT' ||
+            session.user.role === 'ADMIN') &&
+        session.user.companyId
 
     const baseScope: any = isCompanyView
         ? { user: { companyId: session.user.companyId } }
         : { userId: session.user.id }
 
-    const andConditions: any[] = [baseScope]
+    const allSlips = await prisma.slip.findMany({
+        where: baseScope,
+        orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
+        include: {
+            photos: true,
+            tags: true,
+            user: true,
+        },
+    })
 
-    if (query) {
-        andConditions.push({
-            OR: [
-                { title: { contains: query, mode: 'insensitive' } },
-                { place: { contains: query, mode: 'insensitive' } },
-                { summary: { contains: query, mode: 'insensitive' } },
-                { tags: { some: { name: { contains: query, mode: 'insensitive' } } } },
-            ],
-        })
+    // Build canonical supplier list and available months from all slips in scope
+    const rawSupplierNames = allSlips.map((s) => getRawSlipSupplier(s))
+    const canonicalMap = buildCanonicalSupplierMap(rawSupplierNames)
+    const getCanonicalSupplier = (slip: (typeof allSlips)[number]): string => {
+        const raw = getRawSlipSupplier(slip)
+        return canonicalMap.get(raw.toLowerCase()) || raw
     }
 
-    if (supplier && supplier !== 'all') {
-        andConditions.push({
-            OR: [
-                { title: { equals: supplier, mode: 'insensitive' } },
-                { place: { equals: supplier, mode: 'insensitive' } },
-                { title: { contains: supplier, mode: 'insensitive' } },
-                { place: { contains: supplier, mode: 'insensitive' } },
-            ],
-        })
+    const suppliers = Array.from(new Set(allSlips.map(getCanonicalSupplier))).sort((a, b) =>
+        a.localeCompare(b)
+    )
+
+    const monthCountsMap = new Map<string, number>()
+    for (const s of allSlips) {
+        const mKey = getSlipMonthKey(s)
+        monthCountsMap.set(mKey, (monthCountsMap.get(mKey) || 0) + 1)
     }
 
-    if (month && /^\d{4}-\d{2}$/.test(month)) {
-        const [year, mon] = month.split('-').map(Number)
-        const monthStart = new Date(Date.UTC(year, mon - 1, 1, 0, 0, 0, 0))
-        const monthEnd = new Date(Date.UTC(year, mon, 0, 23, 59, 59, 999))
-        andConditions.push({
-            date: {
-                gte: monthStart,
-                lte: monthEnd,
-            },
-        })
-    } else if (start || end) {
-        const dateFilter: any = {}
-        if (start) dateFilter.gte = new Date(start)
-        if (end) dateFilter.lte = new Date(end)
-        andConditions.push({ date: dateFilter })
-    }
+    const availableMonths = Array.from(monthCountsMap.entries())
+        .sort((a, b) => b[0].localeCompare(a[0]))
+        .map(([mKey, count]) => ({
+            value: mKey,
+            label: formatMonthKey(mKey, 'long'),
+            count,
+        }))
 
-    if (activeCategory && activeCategory !== 'All' && activeCategory !== 'all') {
-        const targetCategories = resolveCategoryFilter(activeCategory)
-        andConditions.push({
-            tags: {
-                some: {
-                    OR: targetCategories.map((catName) => ({
-                        name: { equals: catName, mode: 'insensitive' },
-                    })),
-                },
-            },
-        })
-    }
+    const targetCategories =
+        activeCategory && activeCategory !== 'All' && activeCategory !== 'all'
+            ? resolveCategoryFilter(activeCategory).map((c) => c.toLowerCase())
+            : []
 
-    if (contributor && contributor !== 'all' && isCompanyView) {
-        andConditions.push({ userId: contributor })
-    }
+    const startTime = start ? new Date(start).getTime() : null
+    const endTime = end ? new Date(end).getTime() : null
 
-    const whereClause = andConditions.length === 1 ? baseScope : { AND: andConditions }
-
-    const [slips, allSupplierRows] = await Promise.all([
-        prisma.slip.findMany({
-            where: whereClause,
-            orderBy: {
-                date: 'desc',
-            },
-            include: {
-                photos: true,
-                tags: true,
-                user: true,
-            },
-        }),
-        prisma.slip.findMany({
-            where: baseScope,
-            select: {
-                title: true,
-                place: true,
-            },
-        }),
-    ])
-
-    // Build deduplicated list of supplier names (case-insensitive)
-    const supplierMap = new Map<string, string>()
-    for (const row of allSupplierRows) {
-        const raw = (row.place || row.title || '').trim()
-        if (!raw) continue
-        const key = raw.toLowerCase()
-        if (!supplierMap.has(key)) {
-            supplierMap.set(key, raw)
+    const slips = allSlips.filter((slip) => {
+        if (contributor && contributor !== 'all' && isCompanyView) {
+            if (slip.userId !== contributor) return false
         }
-    }
-    const suppliers = Array.from(supplierMap.values()).sort((a, b) => a.localeCompare(b))
+
+        if (activeSupplier) {
+            const canonSup = getCanonicalSupplier(slip)
+            const rawSup = getRawSlipSupplier(slip)
+            if (
+                canonSup.toLowerCase() !== activeSupplier.toLowerCase() &&
+                !isSameSupplier(canonSup, activeSupplier) &&
+                !isSameSupplier(rawSup, activeSupplier)
+            ) {
+                return false
+            }
+        }
+
+        if (activeMonth) {
+            if (getSlipMonthKey(slip) !== activeMonth) return false
+        } else if (startTime || endTime) {
+            const effDate = slip.date ? new Date(slip.date) : new Date(slip.createdAt)
+            const effTime = effDate.getTime()
+            if (startTime && effTime < startTime) return false
+            if (endTime && effTime > endTime) return false
+        }
+
+        if (targetCategories.length > 0) {
+            const hasMatchingTag = slip.tags.some((t) =>
+                targetCategories.includes(t.name.toLowerCase())
+            )
+            if (!hasMatchingTag) return false
+        }
+
+        if (query) {
+            const haystack = [
+                getCanonicalSupplier(slip),
+                slip.title || '',
+                slip.place || '',
+                slip.summary || '',
+                slip.content || '',
+                ...slip.tags.map((t) => t.name),
+            ]
+                .join(' ')
+                .toLowerCase()
+            if (!haystack.includes(query)) return false
+        }
+
+        return true
+    })
 
     let companyUsers: any[] = []
     if (isCompanyView) {
@@ -142,20 +156,14 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
         query ||
         start ||
         end ||
-        month ||
-        (supplier && supplier !== 'all') ||
-        (activeCategory && activeCategory !== 'All' && activeCategory !== 'all') ||
+        activeMonth ||
+        activeSupplier ||
+        targetCategories.length > 0 ||
         (contributor && contributor !== 'all')
     )
 
     const totalSpend = slips.reduce((sum, s) => sum + (s.amountAfterTax || 0), 0)
     const averageSpend = slips.length > 0 ? totalSpend / slips.length : 0
-
-    const formatMonthDisplay = (yyyyMm: string) => {
-        const [y, m] = yyyyMm.split('-').map(Number)
-        if (!y || !m) return yyyyMm
-        return new Date(y, m - 1, 1).toLocaleDateString('en-ZA', { month: 'long', year: 'numeric' })
-    }
 
     return (
         <div className="pb-20">
@@ -167,7 +175,7 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
                         <span className="hidden sm:inline">Dashboard</span>
                     </Link>
                 </div>
-                <h1 className="text-xl font-bold text-brand-navy">All Slips</h1>
+                <h1 className="text-xl font-bold text-brand-navy">All Slips &amp; Search</h1>
                 <div className="flex items-center gap-2">
                     <Link
                         href="/dashboard/suppliers"
@@ -190,31 +198,37 @@ export default async function AllSlipsPage({ searchParams }: AllSlipsPageProps) 
                 companyUsers={companyUsers}
                 isCompanyView={!!isCompanyView}
                 suppliers={suppliers}
+                availableMonths={availableMonths}
             />
 
             {/* Spend Summary Bar */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-0.5">
-                        {supplier && supplier !== 'all'
-                            ? `Spend at ${supplier}`
+                        {activeSupplier
+                            ? `Spend at ${activeSupplier}`
                             : isFiltered
                             ? 'Filtered Spend Summary'
                             : 'Total Vault Spend'}
-                        {month ? ` • ${formatMonthDisplay(month)}` : ''}
+                        {activeMonth ? ` • ${formatMonthKey(activeMonth, 'long')}` : ''}
                     </div>
                     <div className="flex items-baseline gap-3 flex-wrap">
                         <span className="text-2xl font-bold text-brand-navy font-mono">
                             R{totalSpend.toFixed(2)}
                         </span>
                         <span className="text-sm text-gray-500">
-                            across <strong>{slips.length}</strong> {slips.length === 1 ? 'slip' : 'slips'}
+                            across <strong>{slips.length}</strong>{' '}
+                            {slips.length === 1 ? 'slip' : 'slips'}
                             {slips.length > 0 && ` (avg R${averageSpend.toFixed(2)})`}
                         </span>
                     </div>
                 </div>
                 <Link
-                    href={month ? `/dashboard/suppliers?month=${encodeURIComponent(month)}` : '/dashboard/suppliers'}
+                    href={
+                        activeMonth
+                            ? `/dashboard/suppliers?month=${encodeURIComponent(activeMonth)}`
+                            : '/dashboard/suppliers'
+                    }
                     className="btn btn-sm bg-brand-teal/10 hover:bg-brand-teal text-brand-teal hover:text-white border-none rounded-xl normal-case flex items-center gap-2 self-start sm:self-center"
                 >
                     <Store size={16} />
