@@ -11,6 +11,7 @@ import {
     planSupplierRename,
     resolveMergeScope,
     stripSupplierPrefix,
+    suggestPlaceAsSupplier,
 } from "./suppliers";
 
 test("getRawSlipSupplier prioritizes title (Merchant) over place (Location)", () => {
@@ -163,6 +164,20 @@ test("buildCanonicalSupplierMap prefers the most common name", () => {
     ]);
     assert.equal(map.get("engen blouberg"), "Engen Blouberg");
     assert.equal(map.get("engen"), "Engen Blouberg");
+});
+
+test("suggestPlaceAsSupplier only flags note-like titles", () => {
+    assert.equal(
+        suggestPlaceAsSupplier({ title: "Lunch with client", place: "Woolworths Cavendish" }),
+        "Woolworths Cavendish"
+    );
+    assert.equal(
+        suggestPlaceAsSupplier({ title: "Fuel", place: "Engen 1 Stop" }),
+        "Engen 1 Stop"
+    );
+    assert.equal(suggestPlaceAsSupplier({ title: "Engen", place: "Cape Town" }), null);
+    assert.equal(suggestPlaceAsSupplier({ title: "Fuel Stop Engen", place: "N1 City" }), null);
+    assert.equal(suggestPlaceAsSupplier({ title: "Cafe", place: "Cafe" }), null);
 });
 
 test("getSlipMonthKey uses UTC year and month consistently", () => {

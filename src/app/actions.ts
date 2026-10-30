@@ -24,6 +24,7 @@ import {
     namesMatchingSupplier,
     planSupplierRename,
     resolveMergeScope,
+    suggestPlaceAsSupplier,
 } from "@/lib/suppliers"
 import { writeSupplierRenames } from "@/lib/supplierMergeWrite"
 
@@ -1083,6 +1084,7 @@ export async function confirmSupplierMerge(input: {
 
         revalidatePath('/dashboard')
         revalidatePath('/dashboard/suppliers')
+        revalidatePath('/dashboard/suppliers/review')
         revalidatePath('/dashboard/slips')
         return {
             success: true,
@@ -1101,5 +1103,99 @@ export async function confirmSupplierMerge(input: {
             rejectedNames: [],
             updatedCount: 0,
         }
+    }
+}
+
+export interface PlaceSupplierPreview {
+    id: string
+    beforeTitle: string
+    beforePlace: string | null
+    afterTitle: string
+    afterPlace: string | null
+}
+
+async function loadPlaceSuggestion(
+    slipId: string,
+    includeCompanyMembers: boolean
+): Promise<{ error: string } | { slip: PlaceSupplierPreview }> {
+    const session = await getServerSession(authOptions)
+    if (!session) return { error: 'Unauthorized' }
+    if (!slipId || slipId.length > 80) return { error: 'Slip not found' }
+
+    const scope = resolveMergeScope({
+        role: session.user.role,
+        userId: session.user.id,
+        companyId: session.user.companyId,
+        includeCompanyMembers,
+    })
+    if (scope.kind === 'forbidden') return { error: scope.reason }
+
+    const scopeWhere =
+        scope.kind === 'company'
+            ? { user: { companyId: scope.companyId } }
+            : { userId: scope.userId }
+
+    const slip = await prisma.slip.findFirst({
+        where: { id: slipId, ...scopeWhere },
+        select: { id: true, title: true, place: true },
+    })
+    if (!slip) return { error: 'Slip not found' }
+
+    const suggested = suggestPlaceAsSupplier(slip)
+    if (!suggested) {
+        return { error: 'Place is not a better supplier name for this slip.' }
+    }
+
+    return {
+        slip: {
+            id: slip.id,
+            beforeTitle: slip.title,
+            beforePlace: slip.place,
+            afterTitle: suggested,
+            afterPlace: slip.place,
+        },
+    }
+}
+
+export async function previewPlaceAsSupplier(input: {
+    slipId: string
+    includeCompanyMembers?: boolean
+}): Promise<{ success: boolean; error?: string; slip: PlaceSupplierPreview | null }> {
+    try {
+        const loaded = await loadPlaceSuggestion(input.slipId, input.includeCompanyMembers === true)
+        if ('error' in loaded) return { success: false, error: loaded.error, slip: null }
+        return { success: true, slip: loaded.slip }
+    } catch (error) {
+        console.error('Failed to preview place supplier:', error)
+        return { success: false, error: 'Could not preview that slip.', slip: null }
+    }
+}
+
+export async function confirmPlaceAsSupplier(input: {
+    slipId: string
+    includeCompanyMembers?: boolean
+}): Promise<{ success: boolean; error?: string; updatedCount: number }> {
+    try {
+        const loaded = await loadPlaceSuggestion(input.slipId, input.includeCompanyMembers === true)
+        if ('error' in loaded) return { success: false, error: loaded.error, updatedCount: 0 }
+
+        await prisma.$transaction((tx) =>
+            writeSupplierRenames(tx, [
+                {
+                    id: loaded.slip.id,
+                    title: loaded.slip.afterTitle,
+                    place: loaded.slip.afterPlace,
+                },
+            ])
+        )
+
+        revalidatePath('/dashboard')
+        revalidatePath('/dashboard/suppliers')
+        revalidatePath('/dashboard/suppliers/review')
+        revalidatePath('/dashboard/slips')
+        return { success: true, updatedCount: 1 }
+    } catch (error) {
+        console.error('Failed to confirm place supplier:', error)
+        return { success: false, error: 'Could not update that slip. Nothing was saved.', updatedCount: 0 }
     }
 }
