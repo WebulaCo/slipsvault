@@ -13,13 +13,36 @@ export const DEFAULT_GEMINI_MODEL = "gemini-3.8-flash";
 /** Stable, low-latency model with image input and structured JSON. Not the overloaded 3.8 Flash tier. */
 export const DEFAULT_GEMINI_FALLBACK_MODEL = "gemini-3.5-flash-lite";
 
-interface SlipData {
+export interface SlipData {
+    merchant?: string;
+    location?: string;
+    /** Older scans used a single field for merchant or place. */
     place?: string;
     date?: string;
     amountAfterTax?: number;
     currency?: string;
     summary?: string;
     tag?: string;
+}
+
+/**
+ * Merchant goes in the supplier field. Location goes in place.
+ * A legacy `place` value is treated as the merchant and is not copied into both fields.
+ */
+export function readScannedMerchant(data: SlipData | null | undefined): {
+    merchant: string
+    location: string
+} {
+    if (!data) return { merchant: '', location: '' }
+    const merchant = (data.merchant || data.place || '').trim()
+    let location = (data.location || '').trim()
+    if (!data.merchant && data.place && !data.location) {
+        return { merchant: data.place.trim(), location: '' }
+    }
+    if (location && merchant && location.toLowerCase() === merchant.toLowerCase()) {
+        location = ''
+    }
+    return { merchant, location }
 }
 
 export async function extractTextFromImage(buffer: Buffer): Promise<string> {
@@ -56,7 +79,8 @@ export async function extractTextFromImage(buffer: Buffer): Promise<string> {
 
 const SLIP_PROMPT = `
             Analyze this receipt/slip and extract the following information in JSON format:
-            - place: The name of the merchant or place.
+            - merchant: The brand or store name only, without the suburb, mall, or city. Examples: Woolworths, Engen, Checkers.
+            - location: The branch, suburb, mall, or city when it is printed. Use an empty string when it is not shown. Do not repeat the merchant here.
             - date: The date of the transaction (YYYY-MM-DD format if possible).
             - amountAfterTax: The total amount paid (number).
             - currency: The currency symbol (e.g., R, $, €).
@@ -76,7 +100,8 @@ function slipGenerationConfig(modelName: string): GenerationConfig {
         responseSchema: {
             type: SchemaType.OBJECT,
             properties: {
-                place: { type: SchemaType.STRING },
+                merchant: { type: SchemaType.STRING },
+                location: { type: SchemaType.STRING },
                 date: { type: SchemaType.STRING },
                 amountAfterTax: { type: SchemaType.NUMBER },
                 currency: { type: SchemaType.STRING },
@@ -87,7 +112,7 @@ function slipGenerationConfig(modelName: string): GenerationConfig {
                     enum: ALL_CATEGORIES
                 }
             },
-            required: ["place", "date", "amountAfterTax", "currency", "summary", "tag"]
+            required: ["merchant", "location", "date", "amountAfterTax", "currency", "summary", "tag"]
         }
     };
     // The SDK JSON-encodes this object as-is.
@@ -168,7 +193,8 @@ export async function analyzeImageWithGrok(buffer: Buffer, mimeType: string = "i
 
         const prompt = `
             Analyze this receipt/slip and extract the following information in JSON format:
-            - place: The name of the merchant or place.
+            - merchant: The brand or store name only, without the suburb, mall, or city. Examples: Woolworths, Engen, Checkers.
+            - location: The branch, suburb, mall, or city when it is printed. Use an empty string when it is not shown. Do not repeat the merchant here.
             - date: The date of the transaction (YYYY-MM-DD format if possible).
             - amountAfterTax: The total amount paid (number).
             - currency: The currency symbol (e.g., R, $, €).

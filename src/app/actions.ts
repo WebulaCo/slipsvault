@@ -9,7 +9,7 @@ import { redirect } from "next/navigation"
 import { hash } from "bcryptjs"
 
 
-import { analyzeImageWithGemini, analyzeImageWithGrok } from "@/lib/ocr"
+import { analyzeImageWithGemini, analyzeImageWithGrok, readScannedMerchant } from "@/lib/ocr"
 import { saveAndAnalyze } from "@/lib/saveAndAnalyze"
 import {
     ANALYSIS_GAVE_UP_MESSAGE,
@@ -98,11 +98,15 @@ export async function analyzeSlip(formData: FormData) {
         let supplierMatch = null;
         let existingSuppliers: string[] = [];
         const extracted = outcome.result.data;
+        const scanned = readScannedMerchant(extracted);
+        const data = extracted
+            ? { ...extracted, merchant: scanned.merchant, location: scanned.location }
+            : extracted;
 
         try {
             existingSuppliers = await getExistingSuppliers();
-            if (extracted?.place) {
-                supplierMatch = findMatchingExistingSupplier(extracted.place, existingSuppliers);
+            if (scanned.merchant) {
+                supplierMatch = findMatchingExistingSupplier(scanned.merchant, existingSuppliers);
             }
         } catch (supErr) {
             console.error("Supplier match check failed:", supErr);
@@ -111,8 +115,8 @@ export async function analyzeSlip(formData: FormData) {
         if (extracted?.date && typeof extracted?.amountAfterTax === 'number' && extracted.amountAfterTax > 0) {
             try {
                 duplicate = await checkForDuplicate({
-                    title: extracted.place || '',
-                    place: extracted.place || '',
+                    title: scanned.merchant,
+                    place: scanned.location,
                     date: extracted.date,
                     amount: extracted.amountAfterTax,
                 });
@@ -124,7 +128,7 @@ export async function analyzeSlip(formData: FormData) {
         return {
             success: true,
             url: outcome.url,
-            data: outcome.result.data,
+            data,
             usedGrok: outcome.result.usedGrok,
             duplicate,
             supplierMatch,
